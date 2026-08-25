@@ -1,0 +1,949 @@
+import { execSync } from 'node:child_process'
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import { Socket } from 'node:net'
+import path from 'node:path'
+
+import { application } from '@application'
+import { modelService } from '@data/services/ModelService'
+import { providerService } from '@data/services/ProviderService'
+import { loggerService } from '@logger'
+import { BaseService, DependsOn, Injectable, Phase, ServicePhase } from '@main/core/lifecycle'
+import { isWin } from '@main/core/platform'
+import type { Model, Provider, ProviderType, VertexProvider } from '@main/data/migration/legacyTypes'
+import { crossPlatformSpawn } from '@main/utils/processRunner'
+import { getRawShellEnv, refreshShellEnv } from '@main/utils/shellEnv'
+import type { EndpointType, Model as DataModel, UniqueModelId } from '@shared/data/types/model'
+import {
+  CURRENCY,
+  ENDPOINT_TYPE,
+  MODEL_CAPABILITY,
+  parseUniqueModelId,
+  UniqueModelIdSchema
+} from '@shared/data/types/model'
+import type { Provider as DataProvider } from '@shared/data/types/provider'
+import type { BinaryAvailability } from '@shared/types/binary'
+import type { OperationResult } from '@shared/types/codeTools'
+import { formatApiHost, hasApiVersion, withoutTrailingSlash } from '@shared/utils/api'
+import { isNonChatModel } from '@shared/utils/model'
+
+import { vertexAiService } from './VertexAiService'
+
+const logger = loggerService.withContext('OpenClawService')
+
+const openclawConfigDir = () => application.getPath('external.openclaw.config')
+const openclawConfigPath = () => path.join(openclawConfigDir(), 'openclaw.json')
+const openclawConfigBakPath = () => path.join(openclawConfigDir(), 'openclaw.json.bak')
+const openclawLegacyConfigPath = () => path.join(openclawConfigDir(), 'openclaw.cherry.json')
+const DEFAULT_GATEWAY_PORT = 18790
+
+export type GatewayStatus = 'stopped' | 'starting' | 'running' | 'error'
+
+export interface HealthInfo {
+  status: 'healthy' | 'unhealthy'
+  gatewayPort: number
+}
+
+export interface OpenClawConfig {
+  gateway?: {
+    mode?: 'local' | 'remote'
+    port?: number
+    auth?: {
+      token?: string
+    }
+  }
+  agents?: {
+    defaults?: {
+      model?: {
+        primary?: string
+      }
+    }
+  }
+  models?: {
+    mode?: string
+    providers?: Record<string, OpenClawProviderConfig>
+  }
+}
+
+export interface OpenClawModelConfig {
+  id: string
+  name: string
+  contextWindow?: number
+  maxTokens?: number
+  reasoning?: boolean
+  input?: string[]
+  cost?: {
+    input: number
+    output: number
+    cacheRead?: number
+    cacheWrite?: number
+  }
+  [key: string]: unknown
+}
+
+export interface OpenClawProviderConfig {
+  baseUrl: string
+  apiKey: string
+  api: string
+  headers?: Record<string, string>
+  models: OpenClawModelConfig[]
+}
+
+type OpenClawSyncModel = Model &
+  Pick<OpenClawModelConfig, 'contextWindow' | 'maxTokens' | 'reasoning' | 'input' | 'cost'>
+type OpenClawSyncProvider = Provider & { headers?: Record<string, string> }
+
+/**
+ * OpenClaw API types
+ * - 'openai-completions': For OpenAI-compatible chat completions API
+ * - 'anthropic-messages': For Anthropic Messages API format
+ */
+const OPENCLAW_API_TYPES = {
+  OPENAI: 'openai-completions',
+  ANTHROPIC: 'anthropic-messages',
+  OPENAI_RESPOSNE: 'openai-responses'
+} as const
+
+/**
+ * Placeholder API keys for providers that don't require authentication.
+ * OpenClaw requires a non-empty apiKey value even for local providers.
+ * Keys are matched by provider preset/id first, then by provider type.
+ */
+const NO_KEY_PLACEHOLDERS: Record<string, string> = {
+  gpustack: 'gpustack',
+  ollama: 'ollama',
+  lmstudio: 'lmstudio'
+}
+
+/**
+ * Providers that always use Anthropic API format
+ */
+const ANTHROPIC_ONLY_PROVIDERS: ProviderType[] = ['anthropic', 'vertex-anthropic']
+
+const UNSUPPORTED_SYNC_PROVIDER_IDS = new Set(['azure-openai', 'aws-bedrock', 'vertexai', 'vertex-anthropic'])
+
+/**
+ * Endpoint types that use Anthropic API format
+ * These are values from model.endpoint_type field
+ */
+const ANTHROPIC_ENDPOINT_TYPES = ['anthropic']
+
+/**
+ * Check if a model should use Anthropic API based on endpoint_type
+ */
+function isAnthropicEndpointType(model: Model): boolean {
+  const endpointType = model.endpoint_type
+  return endpointType ? ANTHROPIC_ENDPOINT_TYPES.includes(endpointType) : false
+}
+
+/**
+ * Type guard to check if a provider is a VertexProvider
+ */
+function isVertexProvider(provider: Provider): provider is VertexProvider {
+  return provider.type === 'vertexai'
+}
+
+@Injectable('OpenClawService')
+@ServicePhase(Phase.WhenReady)
+@DependsOn(['WindowManager'])
+export class OpenClawService extends BaseService {
+  private gatewayStatus: GatewayStatus = 'stopped'
+  private gatewayPort: number = DEFAULT_GATEWAY_PORT
+  private gatewayAuthToken: string = ''
+
+  public get gatewayUrl(): string {
+    return `ws://127.0.0.1:${this.gatewayPort}/ws`
+  }
+
+  protected async onInit(): Promise<void> {
+    // IPC handlers migrated to IpcApi (openclaw.*)
+  }
+
+  protected async onStop(): Promise<void> {
+    await this.stopGateway()
+  }
+
+  /** Resolve the same live executable path the management UI reports. */
+  private async findOpenClawBinary(): Promise<Exclude<BinaryAvailability, { source: 'none' }> | null> {
+    const snapshot = (await application.get('BinaryManager').getToolSnapshots(['openclaw'])).openclaw
+    return snapshot.availability.source === 'none' ? null : snapshot.availability
+  }
+
+  /**
+   * Start the OpenClaw Gateway
+   */
+  public async startGateway(port?: number): Promise<OperationResult> {
+    this.gatewayPort = port ?? DEFAULT_GATEWAY_PORT
+
+    // Prevent concurrent startup calls
+    if (this.gatewayStatus === 'starting') {
+      return { success: false, message: 'Gateway is already starting' }
+    }
+
+    // Check if the port is already in use
+    const isPortOpen = await this.checkPortOpen(this.gatewayPort)
+    if (isPortOpen) {
+      // Check if this is our gateway already running on this port
+      const { status } = await this.checkGatewayHealth()
+      if (status === 'healthy') {
+        // Stop the stale gateway (e.g. respawned orphan from a previous session)
+        logger.info('Detected stale gateway on port, stopping before restart...')
+        await this.stopGateway()
+
+        // Verify port is now free
+        const stillOpen = await this.checkPortOpen(this.gatewayPort)
+        if (stillOpen) {
+          return {
+            success: false,
+            message: `Port ${this.gatewayPort} is still in use after stopping the old gateway.`
+          }
+        }
+      } else {
+        return {
+          success: false,
+          message: `Port ${this.gatewayPort} is already in use by another application. Please choose a different port.`
+        }
+      }
+    }
+
+    // Refresh first so both system discovery and the spawned process see the
+    // current login-shell environment. System tools retain the user's MISE_*;
+    // Cherry-managed shims use Cherry's execution environment.
+    const managedShellEnv = await refreshShellEnv()
+    const openclaw = await this.findOpenClawBinary()
+    if (!openclaw) {
+      return {
+        success: false,
+        message: 'OpenClaw binary not found. Please install OpenClaw first.'
+      }
+    }
+
+    const shellEnv = openclaw.source === 'system' ? await getRawShellEnv() : managedShellEnv
+    this.gatewayStatus = 'starting'
+
+    try {
+      await this.startAndWaitForGateway(openclaw.path, shellEnv)
+      this.gatewayStatus = 'running'
+      logger.info(`Gateway started on port ${this.gatewayPort}`)
+      return { success: true }
+    } catch (error) {
+      this.gatewayStatus = 'error'
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error('Failed to start gateway:', error as Error)
+      return { success: false, message: errorMessage }
+    }
+  }
+
+  /**
+   * Start gateway via `openclaw gateway run --force` and wait for it to become ready.
+   * Spawns the gateway as a detached process so its lifecycle is independent.
+   * Uses process termination to stop it later.
+   */
+  private async startAndWaitForGateway(openclawPath: string, shellEnv: Record<string, string>): Promise<void> {
+    const args = ['gateway', 'run', '--force']
+
+    logger.info(`Starting gateway: ${openclawPath} ${args.join(' ')}`)
+
+    // Spawn the gateway process. We poll for readiness via health check.
+    // On Windows, avoid detached: true as it creates a visible console window.
+    // Instead, use windowsHide: true without detached - proc.unref() ensures
+    // the parent can exit independently.
+    const proc = crossPlatformSpawn(openclawPath, args, {
+      env: shellEnv,
+      detached: !isWin, // Only detach on non-Windows to avoid console flash
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    })
+    proc.unref()
+
+    // Collect early exit errors (e.g. binary crash on startup)
+    let earlyExitError = ''
+    let stdoutOutput = ''
+    let stderrOutput = ''
+    proc.stdout?.on('data', (data) => {
+      stdoutOutput += data.toString()
+    })
+    proc.stderr?.on('data', (data) => {
+      stderrOutput += data.toString()
+    })
+    proc.on('error', (err) => {
+      earlyExitError = err.message
+    })
+    proc.on('exit', (code) => {
+      // Capture output from both streams for diagnostics
+      const combinedOutput = [stderrOutput.trim(), stdoutOutput.trim()].filter(Boolean).join('\n')
+      const detail = combinedOutput.split('\n').filter(Boolean).slice(0, 5).join('\n')
+      if (code !== 0) {
+        earlyExitError = detail || `gateway exited with code ${code}`
+      } else {
+        // Process exited with code 0 but gateway may not be healthy (e.g. daemonized child failed)
+        earlyExitError = detail
+          ? `gateway exited with code 0 but output: ${detail}`
+          : 'gateway process exited with code 0 before becoming healthy'
+      }
+    })
+
+    // Wait for gateway to become ready (max 30 seconds)
+    const maxWaitMs = 30000
+    const pollIntervalMs = 1000
+    const startTime = Date.now()
+    let pollCount = 0
+    let lastError = ''
+
+    while (Date.now() - startTime < maxWaitMs) {
+      await new Promise((r) => setTimeout(r, pollIntervalMs))
+      pollCount++
+
+      // Check if the process crashed early
+      if (earlyExitError) {
+        throw new Error(earlyExitError)
+      }
+
+      logger.debug(`Polling gateway health (attempt ${pollCount})...`)
+      const { status, error: healthError } = await this.checkGatewayHealthWithError()
+      if (status === 'healthy') {
+        logger.info(`Gateway is healthy (verified after ${pollCount} polls)`)
+        return
+      }
+      if (healthError) lastError = healthError
+    }
+
+    // Combine all available diagnostics: health check errors, stderr, and stdout
+    const diagnostics = [
+      lastError ? `health: ${lastError}` : '',
+      stderrOutput.trim() ? `stderr: ${stderrOutput.trim().split('\n').slice(0, 5).join('\n')}` : '',
+      stdoutOutput.trim() ? `stdout: ${stdoutOutput.trim().split('\n').slice(0, 5).join('\n')}` : ''
+    ]
+      .filter(Boolean)
+      .join('\n')
+    const detail = diagnostics ? `\n${diagnostics}` : ''
+    throw new Error(`Gateway failed to start within ${maxWaitMs}ms (${pollCount} polls)${detail}`)
+  }
+
+  /**
+   * Stop the OpenClaw Gateway.
+   * Kills all openclaw processes to ensure clean shutdown.
+   */
+  public async stopGateway(): Promise<OperationResult> {
+    try {
+      this.killAllOpenClawProcesses()
+
+      const stillRunning = await this.waitForGatewayStop()
+      if (stillRunning) {
+        this.gatewayStatus = 'error'
+        return { success: false, message: 'Failed to stop gateway' }
+      }
+
+      this.gatewayStatus = 'stopped'
+      logger.info('Gateway stopped')
+      return { success: true }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error('Failed to stop gateway:', error as Error)
+      this.gatewayStatus = 'error'
+      return { success: false, message: errorMessage }
+    }
+  }
+
+  /**
+   * Kill all openclaw processes by finding processes on the gateway port.
+   * This works reliably on Windows where process name may show as bun.exe.
+   */
+  private killAllOpenClawProcesses(): void {
+    const currentPid = process.pid
+    try {
+      if (isWin) {
+        const output = execSync(`netstat -ano | findstr ":${this.gatewayPort}"`, { encoding: 'utf-8' })
+        const pids = new Set<string>()
+        for (const line of output.split('\n')) {
+          const match = line.trim().match(/LISTENING\s+(\d+)/)
+          if (match && Number(match[1]) !== currentPid) {
+            pids.add(match[1])
+          }
+        }
+        for (const pid of pids) {
+          try {
+            execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' })
+            logger.info(`Killed process ${pid} on port ${this.gatewayPort}`)
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        execSync('pkill -9 openclaw', { stdio: 'ignore' })
+        logger.info('Killed all openclaw processes')
+      }
+    } catch {
+      logger.debug('No openclaw processes to kill')
+    }
+  }
+
+  /**
+   * Wait for gateway to actually stop, with retries.
+   * Returns true if gateway is still running after all retries.
+   */
+  private async waitForGatewayStop(maxRetries = 3, intervalMs = 1000): Promise<boolean> {
+    for (let i = 0; i < maxRetries; i++) {
+      const stillRunning = await this.checkPortOpen(this.gatewayPort)
+      if (!stillRunning) {
+        return false
+      }
+      if (i < maxRetries - 1) {
+        logger.debug(`Gateway still running after stop, retrying check (${i + 1}/${maxRetries})...`)
+        await new Promise((r) => setTimeout(r, intervalMs))
+      }
+    }
+    return true
+  }
+
+  /**
+   * Get Gateway status. Probes the port when idle to detect externally-started gateways.
+   */
+  public async getStatus(): Promise<{ status: GatewayStatus; port: number }> {
+    if (this.gatewayStatus === 'starting') {
+      return { status: this.gatewayStatus, port: this.gatewayPort }
+    }
+
+    const { status } = await this.checkGatewayHealth()
+    if (status === 'healthy' && this.gatewayStatus !== 'running') {
+      logger.info(`Detected externally running gateway on port ${this.gatewayPort}`)
+      this.gatewayStatus = 'running'
+    } else if (status === 'unhealthy' && this.gatewayStatus === 'running') {
+      logger.warn(`Gateway on port ${this.gatewayPort} is no longer reachable, marking as stopped`)
+      this.gatewayStatus = 'stopped'
+    }
+
+    return {
+      status: this.gatewayStatus,
+      port: this.gatewayPort
+    }
+  }
+
+  /**
+   * Probe gateway health via HTTP request to the health endpoint.
+   * This is faster than spawning the openclaw binary.
+   * Expected response: {"ok":true,"status":"live"}
+   * Does NOT check gatewayStatus — callers that need to detect
+   * externally-started gateways should call this directly.
+   */
+  private async checkGatewayHealth(): Promise<HealthInfo> {
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.gatewayPort}/health`, {
+        signal: AbortSignal.timeout(3000)
+      })
+      if (response.ok) {
+        const data = (await response.json()) as { ok?: boolean; status?: string }
+        if (data.ok && data.status === 'live') {
+          return { status: 'healthy', gatewayPort: this.gatewayPort }
+        }
+      }
+    } catch (error) {
+      logger.debug('Health probe failed:', error as Error)
+    }
+    return { status: 'unhealthy', gatewayPort: this.gatewayPort }
+  }
+
+  /**
+   * Check if a port is open and accepting connections
+   */
+  private async checkPortOpen(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = new Socket()
+      socket.setTimeout(2000)
+
+      socket.on('connect', () => {
+        socket.destroy()
+        logger.debug(`Port ${port} is open (connected)`)
+        resolve(true)
+      })
+
+      socket.on('timeout', () => {
+        socket.destroy()
+        logger.debug(`Port ${port} check timed out`)
+        resolve(false)
+      })
+
+      socket.on('error', (err) => {
+        socket.destroy()
+        logger.debug(`Port ${port} is not open: ${err.message}`)
+        resolve(false)
+      })
+
+      socket.connect(port, '127.0.0.1')
+    })
+  }
+
+  /**
+   * Get OpenClaw Dashboard URL (for opening in miniapp).
+   * The Control UI uses #token= to bootstrap WebSocket authentication while
+   * keeping the token client-side instead of sending it in HTTP requests.
+   */
+  public getDashboardUrl(): string {
+    // Ensure we have the token (may have been lost after app restart)
+    if (!this.gatewayAuthToken) {
+      this.loadAuthTokenFromConfig()
+    }
+    let url = `http://127.0.0.1:${this.gatewayPort}`
+    if (this.gatewayAuthToken) {
+      // Use query string (not URL fragment) so dashboard app state can persist correctly.
+      // Fragment (#...) is often used by SPAs for transient client-side state.
+      url += `#token=${encodeURIComponent(this.gatewayAuthToken)}`
+    }
+    return url
+  }
+
+  /**
+   * Load auth token from the config file (for recovery after app restart).
+   */
+  private loadAuthTokenFromConfig(): void {
+    try {
+      if (fs.existsSync(openclawConfigPath())) {
+        const content = fs.readFileSync(openclawConfigPath(), 'utf-8')
+        const config = JSON.parse(content) as OpenClawConfig
+        const token = config.gateway?.auth?.token
+        if (token) {
+          this.gatewayAuthToken = token
+          logger.info('Recovered auth token from config file')
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to load auth token from config file', error as Error)
+    }
+  }
+
+  /**
+   * Generate a cryptographically secure random auth token
+   */
+  private generateAuthToken(): string {
+    return crypto.randomBytes(24).toString('base64url')
+  }
+
+  /**
+   * Sync Cherry Studio Provider configuration to OpenClaw
+   */
+  public async syncConfig(uniqueModelId: UniqueModelId, port?: number): Promise<OperationResult> {
+    try {
+      // Apply the caller's gateway port before writing openclaw.json so the config's
+      // gateway.port matches the port startGateway() will bind and health-check. Without
+      // this, a custom port is written as the stale in-memory port (default 18790) because
+      // sync runs before startGateway(port), so the gateway binds the wrong port on launch.
+      if (port !== undefined) {
+        this.gatewayPort = port
+      }
+      const { provider, primaryModel } = await this.resolveSyncConfig(uniqueModelId)
+      return await this.syncProviderConfig(provider, primaryModel)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error('Failed to resolve OpenClaw sync config:', error as Error)
+      return { success: false, message: errorMessage }
+    }
+  }
+
+  private async resolveSyncConfig(
+    uniqueModelId: unknown
+  ): Promise<{ provider: OpenClawSyncProvider; primaryModel: OpenClawSyncModel }> {
+    const parsed = UniqueModelIdSchema.safeParse(uniqueModelId)
+    if (!parsed.success) {
+      throw new Error('Invalid OpenClaw model selection')
+    }
+
+    const { providerId, modelId } = parseUniqueModelId(parsed.data)
+    const [provider, primaryModel, models, apiKeys] = await Promise.all([
+      providerService.getByProviderId(providerId),
+      modelService.getByKey(providerId, modelId),
+      modelService.list({ providerId, enabled: true }),
+      providerService.getApiKeys(providerId, { enabled: true })
+    ])
+
+    this.ensureSyncProviderSupported(provider)
+    if (isNonChatModel(primaryModel)) {
+      throw new Error('Selected OpenClaw model must support chat')
+    }
+
+    const endpointType = this.getModelEndpointType(primaryModel, provider)
+    const apiHost = provider.endpointConfigs?.[endpointType]?.baseUrl
+
+    if (!apiHost) {
+      throw new Error(`Provider ${provider.id} has no API host configured for ${endpointType}`)
+    }
+
+    const apiKey = this.resolveSyncApiKey(provider, apiKeys.map((entry) => entry.key).join(','))
+
+    return {
+      provider: {
+        id: provider.id,
+        type: this.toOpenClawProviderType(provider.presetProviderId ?? provider.id, endpointType),
+        name: provider.name,
+        apiKey,
+        apiHost,
+        anthropicApiHost:
+          endpointType === ENDPOINT_TYPE.ANTHROPIC_MESSAGES
+            ? provider.endpointConfigs?.[ENDPOINT_TYPE.ANTHROPIC_MESSAGES]?.baseUrl
+            : undefined,
+        models: models
+          .filter(
+            (model) =>
+              !model.isHidden && !isNonChatModel(model) && this.getModelEndpointType(model, provider) === endpointType
+          )
+          .map((model) => this.toOpenClawModel(model)),
+        presetProviderId: provider.presetProviderId,
+        headers: provider.settings?.extraHeaders
+      },
+      primaryModel: this.toOpenClawModel(primaryModel)
+    }
+  }
+
+  private resolveSyncApiKey(provider: DataProvider, apiKey: string): string {
+    if (apiKey) {
+      return apiKey
+    }
+
+    const noKeyPlaceholder = this.getNoKeyPlaceholder(provider)
+    if (provider.authType === 'api-key' && !noKeyPlaceholder) {
+      throw new Error(`Provider ${provider.id} has no enabled API key configured`)
+    }
+
+    return noKeyPlaceholder ?? ''
+  }
+
+  private getModelEndpointType(model: DataModel, provider: DataProvider): EndpointType {
+    return model.endpointTypes?.[0] ?? provider.defaultChatEndpoint ?? ENDPOINT_TYPE.OPENAI_CHAT_COMPLETIONS
+  }
+
+  private getNoKeyPlaceholder(provider: { id: string; type?: string; presetProviderId?: string }): string | undefined {
+    const providerKey = provider.presetProviderId ?? provider.id
+    return (
+      NO_KEY_PLACEHOLDERS[providerKey] ??
+      NO_KEY_PLACEHOLDERS[provider.id] ??
+      (provider.type ? NO_KEY_PLACEHOLDERS[provider.type] : undefined)
+    )
+  }
+
+  private toOpenClawProviderType(providerType: string, endpointType: EndpointType): Provider['type'] {
+    if (endpointType === ENDPOINT_TYPE.OPENAI_RESPONSES) {
+      return 'openai-response'
+    }
+    if (endpointType === ENDPOINT_TYPE.ANTHROPIC_MESSAGES) {
+      return 'anthropic'
+    }
+    if (endpointType === ENDPOINT_TYPE.GOOGLE_GENERATE_CONTENT) {
+      return 'gemini'
+    }
+    return providerType as Provider['type']
+  }
+
+  private ensureSyncProviderSupported(provider: DataProvider): void {
+    const providerKey = provider.presetProviderId ?? provider.id
+    if (UNSUPPORTED_SYNC_PROVIDER_IDS.has(providerKey)) {
+      throw new Error(`OpenClaw sync does not support ${provider.name} providers yet`)
+    }
+  }
+
+  private toOpenClawModel(model: DataModel): OpenClawSyncModel {
+    const { modelId } = parseUniqueModelId(model.id)
+    const input = model.inputModalities?.filter((modality) => modality === 'text' || modality === 'image')
+    const cost = this.toOpenClawCost(model)
+    return {
+      id: model.apiModelId ?? modelId,
+      provider: model.providerId,
+      name: model.name,
+      group: model.group ?? '',
+      endpoint_type: this.toOpenClawEndpointType(model.endpointTypes?.[0]),
+      ...(model.contextWindow ? { contextWindow: model.contextWindow } : {}),
+      ...(model.maxOutputTokens ? { maxTokens: model.maxOutputTokens } : {}),
+      ...(model.reasoning || model.capabilities.includes(MODEL_CAPABILITY.REASONING) ? { reasoning: true } : {}),
+      ...(input?.length ? { input } : {}),
+      ...(cost ? { cost } : {})
+    }
+  }
+
+  private toOpenClawCost(model: DataModel): OpenClawModelConfig['cost'] | undefined {
+    const pricing = model.pricing
+    if (!pricing) return undefined
+    const isUsd = (currency?: string) => currency === undefined || currency === CURRENCY.USD
+    if (!isUsd(pricing.input.currency) || !isUsd(pricing.output.currency)) return undefined
+    if (pricing.input.perMillionTokens === null || pricing.output.perMillionTokens === null) return undefined
+
+    const cost: NonNullable<OpenClawModelConfig['cost']> = {
+      input: pricing.input.perMillionTokens,
+      output: pricing.output.perMillionTokens
+    }
+    if (pricing.cacheRead?.perMillionTokens != null && isUsd(pricing.cacheRead.currency)) {
+      cost.cacheRead = pricing.cacheRead.perMillionTokens
+    }
+    if (pricing.cacheWrite?.perMillionTokens != null && isUsd(pricing.cacheWrite.currency)) {
+      cost.cacheWrite = pricing.cacheWrite.perMillionTokens
+    }
+    return cost
+  }
+
+  private toOpenClawEndpointType(endpointType?: EndpointType): Model['endpoint_type'] {
+    if (endpointType === ENDPOINT_TYPE.ANTHROPIC_MESSAGES) {
+      return 'anthropic'
+    }
+    if (endpointType === ENDPOINT_TYPE.OPENAI_RESPONSES) {
+      return 'openai-response'
+    }
+    if (endpointType === ENDPOINT_TYPE.GOOGLE_GENERATE_CONTENT) {
+      return 'gemini'
+    }
+    return 'openai'
+  }
+
+  public async syncProviderConfig(provider: Provider, primaryModel: Model): Promise<OperationResult> {
+    try {
+      // Ensure config directory exists
+      if (!fs.existsSync(openclawConfigDir())) {
+        fs.mkdirSync(openclawConfigDir(), { recursive: true })
+      }
+
+      // Migrate legacy openclaw.cherry.json → openclaw.json
+      if (fs.existsSync(openclawLegacyConfigPath())) {
+        if (fs.existsSync(openclawConfigPath())) {
+          fs.renameSync(openclawConfigPath(), openclawConfigBakPath())
+          logger.info('Migrated openclaw.json → openclaw.json.bak')
+        }
+        fs.renameSync(openclawLegacyConfigPath(), openclawConfigPath())
+        logger.info('Migrated openclaw.cherry.json → openclaw.json')
+      }
+
+      // Read existing config. An unparseable file aborts the sync instead of
+      // being rebuilt from scratch — silently replacing it would destroy any
+      // hand-edited OpenClaw config the user could otherwise repair.
+      let config: OpenClawConfig = {}
+      if (fs.existsSync(openclawConfigPath())) {
+        const content = fs.readFileSync(openclawConfigPath(), 'utf-8')
+        try {
+          config = JSON.parse(content)
+        } catch {
+          throw new Error(`Existing OpenClaw config is not valid JSON; fix or remove ${openclawConfigPath()}`)
+        }
+      }
+
+      // Build provider key
+      const providerKey = `cherry-${provider.id}`
+
+      // Determine the API type based on model, not provider type
+      // Mixed providers (cherryin, aihubmix, etc.) can have both OpenAI and Anthropic endpoints
+      const apiType = this.determineApiType(provider, primaryModel)
+      const baseUrl = this.getBaseUrlForApiType(provider, apiType)
+
+      // Get API key - for vertexai, get access token from VertexAiService
+      // If multiple API keys are configured (comma-separated), use the first one
+      // Some providers like Ollama and LM Studio don't require API keys
+      let apiKey = provider.apiKey ? provider.apiKey.split(',')[0].trim() : ''
+      if (isVertexProvider(provider)) {
+        try {
+          const vertexService = vertexAiService
+          apiKey = await vertexService.getAccessToken({
+            projectId: provider.project,
+            serviceAccount: {
+              privateKey: provider.googleCredentials.privateKey,
+              clientEmail: provider.googleCredentials.clientEmail
+            }
+          })
+        } catch (err) {
+          logger.warn('Failed to get VertexAI access token, using provider apiKey:', err as Error)
+        }
+      }
+
+      // Providers like Ollama and LM Studio don't require real API keys,
+      // but OpenClaw needs a non-empty placeholder value
+      if (!apiKey) {
+        apiKey = this.getNoKeyPlaceholder(provider) ?? 'no-key-required'
+      }
+
+      // Build OpenClaw provider config
+      // Preserve existing model-level config that users may have modified in OpenClaw
+      // (e.g., vision, custom context window, extra parameters)
+      config.models = config.models || { mode: 'merge', providers: {} }
+      config.models.providers = config.models.providers || {}
+      const existingProvider = config.models.providers[providerKey]
+      const existingModels = existingProvider?.models || []
+      const existingModelMap = new Map(existingModels.map((m) => [m.id, m]))
+      const providerHeaders = (provider as OpenClawSyncProvider).headers
+
+      // Build OpenClaw provider config with merge strategy
+      const openclawProvider: OpenClawProviderConfig = {
+        ...existingProvider,
+        baseUrl,
+        apiKey,
+        api: apiType,
+        models: provider.models.map((m) => {
+          const existing = existingModelMap.get(m.id)
+          const synced = m as OpenClawSyncModel
+          return {
+            ...(synced.maxTokens ? { maxTokens: synced.maxTokens } : {}),
+            ...(synced.reasoning !== undefined ? { reasoning: synced.reasoning } : {}),
+            ...(synced.input ? { input: synced.input } : {}),
+            ...(synced.cost ? { cost: synced.cost } : {}),
+            ...existing,
+            id: m.id,
+            name: m.name,
+            contextWindow: existing?.contextWindow ?? synced.contextWindow ?? 128000
+          }
+        })
+      }
+      if (providerHeaders && Object.keys(providerHeaders).length > 0) {
+        openclawProvider.headers = { ...providerHeaders, ...existingProvider?.headers }
+      }
+
+      // Set gateway mode to local (required for gateway to start)
+      config.gateway = config.gateway || {}
+      config.gateway.mode = 'local'
+      config.gateway.port = this.gatewayPort
+      // Auto-generate auth token if not already set, and store it for API calls
+      const token = this.gatewayAuthToken || this.generateAuthToken()
+      config.gateway.auth = { token }
+      this.gatewayAuthToken = token
+
+      // Update config
+      config.models.providers[providerKey] = openclawProvider
+
+      // Set primary model
+      config.agents = config.agents || { defaults: {} }
+      config.agents.defaults = config.agents.defaults || {}
+      config.agents.defaults.model = {
+        primary: `${providerKey}/${primaryModel.id}`
+      }
+
+      // Write config file
+      fs.writeFileSync(openclawConfigPath(), JSON.stringify(config, null, 2), 'utf-8')
+
+      logger.info(`Synced provider ${provider.id} to OpenClaw config`)
+      return { success: true }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error('Failed to sync provider config:', error as Error)
+      return { success: false, message: errorMessage }
+    }
+  }
+
+  /**
+   * Like checkGatewayHealth but also returns error message when unhealthy.
+   * Uses HTTP request for faster health checks.
+   * Expected response: {"ok":true,"status":"live"}
+   */
+  private async checkGatewayHealthWithError(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.gatewayPort}/health`, {
+        signal: AbortSignal.timeout(3000)
+      })
+      if (response.ok) {
+        const data = (await response.json()) as { ok?: boolean; status?: string }
+        if (data.ok && data.status === 'live') {
+          return { status: 'healthy' }
+        }
+        return { status: 'unhealthy', error: `Gateway not live: ${JSON.stringify(data)}` }
+      }
+      return { status: 'unhealthy', error: `HTTP ${response.status}: ${response.statusText}` }
+    } catch (error) {
+      return { status: 'unhealthy', error: error instanceof Error ? error.message : String(error) }
+    }
+  }
+
+  /**
+   * Determine the API type based on model and provider
+   * This supports mixed providers (cherryin, aihubmix, new-api, etc.) that have both OpenAI and Anthropic endpoints
+   *
+   * Priority order:
+   * 1. Provider type (anthropic, vertex-anthropic always use Anthropic API)
+   * 2. Model endpoint_type (explicit endpoint configuration)
+   * 3. Provider has anthropicApiHost configured
+   * 4. Default to OpenAI-compatible
+   */
+  private determineApiType(provider: Provider, model: Model): string {
+    // 1. Check if provider type is always Anthropic
+    if (ANTHROPIC_ONLY_PROVIDERS.includes(provider.type)) {
+      return OPENCLAW_API_TYPES.ANTHROPIC
+    }
+
+    // 2. Check model's endpoint_type (used by new-api and other mixed providers)
+    if (isAnthropicEndpointType(model)) {
+      return OPENCLAW_API_TYPES.ANTHROPIC
+    }
+    if (model.endpoint_type === 'openai-response') {
+      return OPENCLAW_API_TYPES.OPENAI_RESPOSNE
+    }
+
+    // 3. Check if provider has anthropicApiHost configured
+    if (provider.anthropicApiHost) {
+      return OPENCLAW_API_TYPES.ANTHROPIC
+    }
+
+    if (provider.type === 'openai-response') {
+      return OPENCLAW_API_TYPES.OPENAI_RESPOSNE
+    }
+
+    // 4. Default to OpenAI-compatible
+    return OPENCLAW_API_TYPES.OPENAI
+  }
+
+  /**
+   * Get the appropriate base URL for the given API type
+   * For anthropic-messages, prefer anthropicApiHost if available
+   * For openai-completions, use apiHost with proper formatting
+   */
+  private getBaseUrlForApiType(provider: Provider, apiType: string): string {
+    if (apiType === OPENCLAW_API_TYPES.ANTHROPIC) {
+      // For Anthropic API type, prefer anthropicApiHost if available
+      const host = provider.anthropicApiHost || provider.apiHost
+      return this.formatAnthropicUrl(host)
+    }
+    // For OpenAI-compatible API type
+    return this.formatOpenAIUrl(provider)
+  }
+
+  /**
+   * Format URL for OpenAI-compatible APIs
+   * Provider-specific URL patterns:
+   * - VertexAI: {location}-aiplatform.googleapis.com/v1beta1/projects/{project}/locations/{location}/endpoints/openapi
+   * - Gemini: {host}/v1beta/openai (OpenAI-compatible endpoint)
+   * - Vercel AI Gateway: {host}/v1 (stored as /v1/ai, needs conversion)
+   * - Others: {host}/v1
+   */
+  private formatOpenAIUrl(provider: Provider): string {
+    // Special-case built-in GitHub / Copilot providers: these hosts should
+    // not have a `/v1` suffix appended by default (renderer applies
+    // `formatApiHost(..., false)` for these). Mirror that behavior here
+    // to avoid constructing incorrect endpoints that return 404.
+    if (provider.id === 'copilot' || provider.id === 'github') {
+      return formatApiHost(provider.apiHost, false)
+    }
+
+    const url = withoutTrailingSlash(provider.apiHost)
+    const providerType = provider.type
+
+    // VertexAI: build OpenAI-compatible endpoint URL with project and location
+    // https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/call-gemini-using-openai-library
+    if (isVertexProvider(provider)) {
+      const location = provider.location || 'us-central1'
+      return `https://${location}-aiplatform.googleapis.com/v1beta1/projects/${provider.project}/locations/${location}/endpoints/openapi`
+    }
+
+    // Gemini: use OpenAI-compatible endpoint
+    // https://ai.google.dev/gemini-api/docs/openai
+    if (providerType === 'gemini' && url.includes('generativelanguage.googleapis.com')) {
+      return `${url}/v1beta/openai`
+    }
+
+    // Vercel AI Gateway: convert /v1/ai to /v1
+    if (providerType === 'gateway' && url.endsWith('/v1/ai')) {
+      return url.replace(/\/v1\/ai$/, '/v1')
+    }
+
+    // Skip if URL already has version (e.g., /v1, /v2, /v3)
+    if (hasApiVersion(url)) {
+      return url
+    }
+
+    return `${url}/v1`
+  }
+
+  /**
+   * Format URL for Anthropic-compatible APIs (no version suffix needed)
+   */
+  private formatAnthropicUrl(apiHost: string): string {
+    return withoutTrailingSlash(apiHost)
+  }
+}
