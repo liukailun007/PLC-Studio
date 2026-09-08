@@ -50,3 +50,29 @@ node scripts/tia-project-scanner/scan.mjs --project "C:\Users\Administrator\Desk
 - 地图不实时？ 对，它是快照；工程改了需重跑一次此命令。
 - 变量中文看到乱码？ 本扫描器用 UTF-8 直读导出文件，已避开 MCP DescribeBlockLogic 那个乱码问题；
   请用能正确显示 UTF-8 的工具查看 maps.json。
+
+## token 怎么省（很重要：别把整份 maps.json 塞进对话）
+maps.json 是按块分隔的。给"TIA 开发助手"加一条**查询命令**，只回需要的那一小块，不整篇贴：
+
+```
+# 看概貌（~几百字节，很快、很省）——先要这个
+node scripts/tia-project-scanner/query.mjs index
+# 需要某一块的细节(含成员+中文注释)时，只拉那一个
+node scripts/tia-project-scanner/query.mjs block FB_MotorControl
+# 需要"某块按方向列出用到的变量"时
+node scripts/tia-project-scanner/query.mjs uses FB_MotorControl
+```
+
+给助手提示词里加：
+```
+查询工程上下文时：
+- 只调用上面 query.mjs 的 index / block <名> / uses <名>，绝不把整个 maps.json 内容复述进对话。
+- 若本机已无 maps.json 或工程变化，先重跑 scan.mjs 再 query。
+```
+
+效果：索引只有几百字节；想看某一 FB 才拉那一块（通常几百到几千字节）。对话里长期只携带“小而准”的结果。
+
+## 什么时候才“全自动重建 + 一键产品化”
+本仓库脚本已是“命令即可重建 + 按块查询”闭环（用法如上）。要更“界面化/自动”（如在 PLC Studio 里做成一个按钮、或在改块后自动触发、指纹判断是否需重扫）需改 PLC Studio 自身代码（见 plan#9 之后的路线，较大、需重建 app），按需再投入。
+
+
