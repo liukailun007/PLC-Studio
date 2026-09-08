@@ -131,3 +131,44 @@ B) 变量精读：导出块→解析接口→把每个成员 名/类型/偏移/�
 C) 接法 B 产品化：把“扫描/重建地图”做成助手可一键触发的工具 + 可查询
 三块工作量递增。建议先从 A(自动重建)拿价值，B/C 按需再议。
 
+---
+
+# 9. V0.2 完成更新（2026-09-08）—— 接口变量解析 + 可复用扫描器
+
+用户确认三件事(A/B/C)都做、按我判断推进。本轮完成一半。
+
+## 新增/修改文件（本仓库，feat/project-context-scanner-v01 分支）
+- `scripts/tia-project-scanner/parseS7dcl.mjs`  —— SIMATIC 导出文档解析库
+  `parseS7dcl(dcl, s7res)` ：识别块 类型/名，抽 FB/FC/DB 接口变量 members[]
+  （name, dir INPUT/OUTPUT/IN_OUT/STATIC/TEMP, type, mlcId, Chinese comment）
+  `logicPreview(dcl)` ：取 SCL/NETWORK 逻辑前若干字符（UTF-8 直读，避开乱码）
+- `scripts/tia-project-scanner/scan.mjs` —— 升级 v0.4：
+  设备 + 块(编号/类型/语言/一致性/路径) + **逐块 members(含中文注释)** + HMI +
+  可选 `--with-logic` 存逻辑预览。
+  只读；块导出到系统临时目录解析后自清（`--export-dir` 可保留调测）。
+- 生成物：`out/project-context/maps.json`（gitignore 不跟踪）。
+
+## 真项目3 结果（v0.4 实测）
+- 设备 PLC_1(S7-1500) + HMI_RT_1(Unified)
+- blocks=6：Main(OB), FB_MotorControl(20成员), DB_MotorHMI(11成员), FB_AI_Convert(21成员),
+  FB_AI_Convert_DB, FB_MotorControl_DB(实例DB，0成员)。
+- 每个成员带中文注释，例如
+  FB_MotorControl：StartCmd=启动命令, RunFeedback=运行反馈（接触器/变频器反馈）,
+    RemoteMode=远程模式(1远程0本地), state=状态机0停1运2故障 …
+  FB_AI_Convert：AI_Raw=模拟量原始值0~27648, HH/H/L/LL_Limit=高低高报警限值, Hyst=回差 …
+- 逐块逻辑预览可用(--with-logic)。
+- 中文注释通过读 .s7res 拿到；且 UTF-8 直读避免 DescribeBlockLogic 的中文乱码。
+
+## 关键边界（诚实）
+- 这些 S7-1500 块为 S7_Optimized（现代默认），通常无手填绝对地址 %DBx.DBXy.z；
+  如需绝对地址需对 Standard-Layout / 非优化 DB 额外处理（该样例 DB 亦无手填偏移，仅类型+初值）。
+- 每块“接口/成员地址级 + 注释”已由本版达成（地址仅在非优化时才有实体）。
+- V0.2 的“自动化重建 + 助手一键触发(产品化 C)”仍待做。
+
+## 复跑脚手架（人可一键，AI/助手可调）
+```
+cd D:\PLC-studio-main
+node scripts/tia-project-scanner/scan.mjs --project "<项目>.ap21" [--with-logic]
+# 产物：out/project-context/maps.json
+```
+

@@ -1,34 +1,44 @@
 #!/usr/bin/env node
 /**
- * TIA Project Scanner V0.3 (只读) —— 生成 ProjectContext maps.json
+ * TIA ProjectContext Scanner v0.4 (只读) —— 生成一份结构化“项目上下文”关系地图。
  *
- * 干净版：保留结构 + 干净的跨引用"使用变量/块/类型"，不把会乱码的中文 logic 文本写进地图
- * （DescribeBlockLogic 的中文注释/渲染有 MCP 端编码 bug，属上游问题，另行标记，不进 V0.1 地图）。
+ * 能力：
+ *   - 设备(devices)、程序块(blocks, 含编号/类型/语言/一致性)
+ *   - 逐块接口变量枚举：导出 SIMATIC 文档(.s7dcl+.s7res) → 解析每个 FB/FC/DB 的
+ *     {方向 INPUT/OUTPUT/IN_OUT/STATIC/TEMP, 名, 类型, 中文注释(取自 .s7res)}
+ *   - 可选 SCL 逻辑预览(直接 UTF-8 读文件，避开 MCP 乱码 bug)
+ *   - HMI 概况
  *
- * 产出：
- *   devices / blocks(每块: 编号 类型 语言 一致性 路径) /
- *   blockUses[每代码块: 引用的 operand 去重: 名/类型/访问] /
- *   edges[块→块可识别的引用] / tagTables / hmi
+ * 绝不写入/修改目标项目。块会只读导出到系统临时目录解析后自动清理。
  *
- * 用法（仓库根目录）：
- *   node scripts/tia-project-scanner/scan.mjs --project "<...ap21>" [--out maps.json] [--verbose]
+ * 用法（仓库根目录，需能用 node + 仓库 node_modules 解析 MCP SDK）：
+ *   node scripts/tia-project-scanner/scan.mjs \
+ *        --project "<...ap21>" \
+ *        [--out out/project-context/maps.json] \
+ *        [--portal "<Portal V21>"] [--with-logic] [--export-dir <dir>] [--verbose]
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { parseS7dcl, logicPreview } from './parseS7dcl.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(__dirname, '..', '..')
 const argVal = (n, d) => { const i = process.argv.indexOf(n); return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : d }
-const verbose = process.argv.includes('--verbose')
+const has = (n) => process.argv.includes(n)
+const verbose = has('--verbose')
+const withLogic = has('--with-logic')
 const project = argVal('--project', null)
 const portal = argVal('--portal', 'C:\\Program Files\\Siemens\\Automation\\Portal V21')
 const outPath = argVal('--out', path.join(REPO_ROOT, 'out', 'project-context', 'maps.json'))
 const EXE = path.join(REPO_ROOT, 'MCP', 'TIA_Portal_Openness_MCP-master', 'runtime', 'v21', 'TiaMcpServer.exe')
-if (!project) { console.error('USAGE: node scan.mjs --project <...ap21> [--out maps.json]'); process.exit(1) }
+const exportDirArg = has('--export-dir') ? argVal('--export-dir', null) : null
+
+if (!project) { console.error('USAGE: node scan.mjs --project <...ap21> [--out maps.json] [--portal <Portal V21>]'); process.exit(1) }
 const vlog = (...a) => { if (verbose) console.log('  >', ...a) }
 
 const transport = new StdioClientTransport({
@@ -36,13 +46,14 @@ const transport = new StdioClientTransport({
   args: ['--tia-portal-location', portal, '--tia-major-version', '21', '--logging', '0'],
   stderr: 'pipe'
 })
-transport.stderr?.on('data', (d) => { const s = d.toString().trim(); if (verbose && s) vlog('stderr:', s.slice(0, 200)) })
-const client = new Client({ name: 'tia-project-scanner', version: '0.3.0' })
+transport.stderr?.on('data', (d) => { const s = d.toString().trim(); if (verbose && s) vlog('stderr:', s.slice(0, 250)) })
+const client = new Client({ name: 'tia-project-context-scanner', version: '0.4.0' })
 
 const attr = (a, n) => { const x = (a || []).find((y) => y.name === n); return x ? x.value : null }
 const itemsOf = (o) => (o && (Array.isArray(o.items) ? o.items : Array.isArray(o.Items) ? o.Items : null)) || null
-async function toolJson(name, args = {}, silent) {
-  if (!silent) vlog('call', name, JSON.stringify(args))
+
+async function toolAny(name, args = {}) {
+  vlog('call', name, JSON.stringify(args))
   try {
     const res = await client.callTool({ name, arguments: args })
     const c = (res && res.content) || []
@@ -53,121 +64,125 @@ async function toolJson(name, args = {}, silent) {
   } catch (e) { return { error: (e && e.message) || String(e) } }
 }
 
+async function exportAllBlocks(softwarePath, groupPath, dir) {
+  const r = await toolAny('ExportBlocksAsDocuments', { softwarePath, blockPath: groupPath, exportPath: dir })
+  if (r.error) { vlog('batch export error:', r.error); return { error: r.error } }
+  return { error: null }
+}
+
 async function main() {
-  console.log('TIA Project Scanner V0.3 (只读)')
+  console.log('TIA ProjectContext Scanner v0.4 (只读)')
   console.log('  project:', project)
   await client.connect(transport)
   console.log('  connected.')
 
-  const res = {
-    meta: { scanner: 'tia-project-scanner v0.3', scannedAt: new Date().toISOString(), projectFile: project },
+  const result = {
+    meta: { scanner: 'tia-project-context-scanner v0.4', scannedAt: new Date().toISOString(), projectFile: project },
     project: { name: null, path: project },
     devices: [],
     blocks: [],
-    blockUses: [],   // [{ block, refs:[{name,type,access}] }]
-    edges: [],       // [{ from, to, type }]
-    tagTables: [],
     hmi: [],
     notes: [],
     errors: []
   }
 
-  try {
-    // project name from GetProject (best-effort)
-    try { const pj = await toolJson('GetProject', {}, true); const its = itemsOf(pj); if (its && its[0]) res.project.name = its[0].name } catch {}
+  let keepDir = null
+  if (exportDirArg) { try { mkdirSync(exportDirArg, { recursive: true }); keepDir = exportDirArg } catch {} }
+  const expDir = keepDir || mkdtempSync(path.join(os.tmpdir(), 'tia_pc_'))
 
-    // devices
-    try { for (const it of itemsOf(await toolJson('GetDevices', {}, true)) || []) { const a = it.attributes || []; res.devices.push({ name: it.name, typeName: attr(a, 'TypeName') || null, typeIdentifier: attr(a, 'TypeIdentifier') || null }) } }
-    catch (e) { res.errors.push('GetDevices: ' + ((e && e.message) || e)) }
+  try {
+    try { const pj = await toolAny('GetProject'); const its = itemsOf(pj); if (its && its[0]) result.project.name = its[0].name } catch {}
+
+    try {
+      const dv = await toolAny('GetDevices')
+      for (const it of itemsOf(dv) || []) { const a = it.attributes || []; result.devices.push({ name: it.name, typeName: attr(a, 'TypeName') || null, typeIdentifier: attr(a, 'TypeIdentifier') || null }) }
+    } catch (e) { result.errors.push('GetDevices: ' + ((e && e.message) || e)) }
 
     const softwarePath = 'PLC_1'
-
-    // blocks (flat via GetBlocksWithHierarchy)
     try {
-      const wh = await toolJson('GetBlocksWithHierarchy', { softwarePath }, true)
+      const wh = await toolAny('GetBlocksWithHierarchy', { softwarePath })
       const root = wh && (wh.root || wh.Root)
-      if (!root) { res.notes.push('hierarchy empty; fallback GetBlocks'); const b = await toolJson('GetBlocks', { softwarePath, name: '' }, true); for (const it of itemsOf(b) || []) addBlock(it, res, 'Program blocks') }
-      else { addTree(root, res) }
-    } catch (e) { res.errors.push('GetBlocksWithHierarchy: ' + ((e && e.message) || e)) }
+      if (root) collectBlocks(root, result)
+      else { const b = await toolAny('GetBlocks', { softwarePath, name: '' }); for (const it of itemsOf(b) || []) addBlockMeta(it, result) }
+    } catch (e) { result.errors.push('GetBlocksWithHierarchy: ' + ((e && e.message) || e)) }
 
-    // PLC tag tables
-    try { res.tagTables = (await toolJson('GetPlcTagTables', { softwarePath }, true)).items || [] } catch {}
+    try { const info = await toolAny('GetHmiProgramInfo', { softwarePath: 'HMI_RT_1' }); let s = []; try { s = (await toolAny('GetHmiScreens', { softwarePath: 'HMI_RT_1' })).items || [] } catch {}; result.hmi.push({ softwarePath: 'HMI_RT_1', programType: info.programType || null, screens: s }) } catch {}
 
-    // HMI
-    try { const info = await toolJson('GetHmiProgramInfo', { softwarePath: 'HMI_RT_1' }, true); let s = []; try { s = (await toolJson('GetHmiScreens', { softwarePath: 'HMI_RT_1' }, true)).items || [] } catch {}; res.hmi.push({ softwarePath: 'HMI_RT_1', programType: info.programType || null, screens: s }) } catch (e) { res.notes.push('HMI: ' + ((e && e.message) || e)) }
-
-    // Cross-references per code block -> clean "uses"
-    for (const b of res.blocks) {
-      const kind = (b.kind || '').toUpperCase()
-      if (!['OB', 'FB', 'FC', 'DB'].includes(kind)) continue
-      const qp = b.qualifiedPath
-      if (!qp) continue
-      const cr = await toolJson('GetCrossReferences', { softwarePath, objectPath: qp }, true)
-      const its = itemsOf(cr) || []
-      // dedupe by (ref,type,access); classify
-      const seen = new Map()
-      for (const r of its) {
-        const key = (r.referenceName || '') + '|' + (r.referenceType || '') + '|' + (r.access || '')
-        if (!key.trim() || seen.has(key)) continue
-        seen.set(key, true)
+    if (result.blocks.length) {
+      console.log('  导出程序块文档以解析接口变量 …')
+      const g = 'Program blocks'
+      const exp = await exportAllBlocks(softwarePath, g, expDir)
+      if (exp.error) result.errors.push('ExportBlocksAsDocuments: ' + exp.error)
+      const byName = new Map()
+      for (const f of readdirSync(expDir)) if (f.endsWith('.s7dcl')) byName.set(f.slice(0, -'.s7dcl'.length), f)
+      for (const [base, fname] of byName) {
+        let dcl
+        try { dcl = readFileSync(path.join(expDir, fname), 'utf8') } catch { continue }
+        let resText = ''
+        try { resText = readFileSync(path.join(expDir, base + '.s7res'), 'utf8') } catch {}
+        const blk = result.blocks.find((b) => b.name === base)
+        if (!blk) continue
+        const p = parseS7dcl(dcl, resText)
+        if (p.kind) blk.kind = p.kind
+        blk.members = p.members
+        if (withLogic) { const lp = logicPreview(dcl, 7000); if (lp) blk.logicPreview = lp }
       }
-      // produce non-empty unique list
-      const refs = [...seen.keys()].map((k) => { const [ra, ty, ac] = k.split('|'); return { name: ra, type: ty || null, access: ac || null } })
-      if (refs.length) res.blockUses.push({ block: b.name, kind, refs })
+      if (!byName.size && !keepDir) result.notes.push('导出未产生 .s7dcl（可能 LAD-only 或无接口变量）')
     }
-  } catch (e) { res.errors.push('top: ' + ((e && (e.message || e)) || 'unknown')) }
+  } catch (e) {
+    result.errors.push('top: ' + ((e && (e.message || e)) || String(e)))
+  } finally {
+    if (!keepDir) { try { rmSync(expDir, { recursive: true, force: true }) } catch {} }
+  }
 
   mkdirSync(path.dirname(outPath), { recursive: true })
-  writeFileSync(outPath, JSON.stringify(res, null, 2))
-
+  writeFileSync(outPath, JSON.stringify(result, null, 2))
   console.log('\n已写出: ' + outPath)
-  console.log('  project =', res.project?.name ?? '(unknown)')
-  console.log('  devices =', (res.devices.map((d) => d.name) || []).join(', '))
-  console.log('  blocks  =', res.blocks.length, '->', res.blocks.map((b) => `${b.qualified}`).join(' | '))
-  console.log('  blockUses (去重引用) =', res.blockUses.length)
-  for (const u of res.blockUses) {
-    console.log('    [' + u.block + '] 使用', u.refs.length, '类:')
-    const byType = {}
-    for (const r of u.refs) { const t = r.type || 'ref'; byType[t] = (byType[t] || 0) + 1 }
-    console.log('       ' + Object.entries(byType).map(([k, v]) => `${k}=${v}`).join(' '))
-    // show sample names of 'Uses'
-    const uses = u.refs.filter((r) => (r.type || 'Uses').toLowerCase().startsWith('use'))
-    if (uses.length) console.log('       样例 Uses:', uses.slice(0, 14).map((r) => r.name).join(', '))
+  console.log('  project =', result.project?.name ?? '(unknown)')
+  console.log('  devices =', (result.devices.map((d) => d.name) || []).join(', '))
+  console.log('  blocks  =', result.blocks.length)
+  const byK = {}
+  for (const b of result.blocks) byK[b.kind] = (byK[b.kind] || 0) + 1
+  console.log('    分类: ' + Object.entries(byK).map(([k, v]) => `${k}=${v}`).join(', '))
+  for (const b of result.blocks) {
+    const n = (b.members || []).length
+    const q = b.qualifiedBare || b.qualified || ''
+    console.log(`      - ${q}  [${b.language || ''}]  变量=${n}${b.logicPreview ? ' ·逻辑✓' : ''}`)
+    const mem = (b.members || []).slice(0, 6).map((m) => `${m.name}:${m.type}`).join(', ')
+    if (mem) console.log(`          ${mem}${(b.members || []).length > 6 ? ', …' : ''}`)
   }
-  if (res.hmi.length) for (const h of res.hmi) console.log('  HMI', h.softwarePath, '=', h.programType || '', 'screen:', (h.screens || []).join(','))
-  if (res.notes.length) res.notes.forEach((n) => console.log('  note: ' + n))
-  if (res.errors.length) res.errors.forEach((e) => console.log('  error: ' + e)); else console.log('  无错误。')
+  for (const h of result.hmi) if (h.screens) console.log('  HMI', h.softwarePath, '=', h.programType || '', 'screen:', h.screens.join(','))
+  if (result.notes.length) result.notes.forEach((n) => console.log('  note:', n))
+  if (result.errors.length) result.errors.forEach((e) => console.log('  error:', e)); else console.log('  无错误。')
   try { await client.close() } catch {}
 }
 
-function addTree(node, res) {
-  // node may be the root BlockGroupInfo; push blocks preserving group prefix from hierarchy
-  // root.name e.g. "程序块" (Chinese, may mojibake) — but blocks carry their own group path components.
-  for (const g of node.groups || []) addTree(g, res)
-  const groupName = node.name || ''
-  const sanitizedGroup = /^[\x00-\x7F]+$/.test(groupName) ? groupName : '' // skip possibly-moja group labels; real path used in qualifiedPath below is best-effort
-  for (const b of node.blocks || []) addBlock(b, res, sanitizedGroup || 'Program blocks')
+function collectBlocks(node, result) {
+  for (const g of node.groups || []) collectBlocks(g, result)
+  const name = node.name || ''
+  const groupName = /^[\x00-\x7F]+$/.test(name) ? name : 'Program blocks'
+  for (const b of node.blocks || []) addBlockMeta(b, result, groupName)
 }
 
-function addBlock(it, res, groupName) {
+function addBlockMeta(it, result, groupName = 'Program blocks') {
   const a = it.attributes || []
   const number = attr(a, 'Number')
   const kind = it.typeName || it.type || ''
-  const name = String(it.name || '')
-  const groupPath = `/Program blocks` // keep structural ASCII anchor
-  const rec = {
+  const name = it.name
+  const label = kind === 'DB' ? 'DB' : kind
+  result.blocks.push({
     kind,
     name,
     number,
     language: it.programmingLanguage || null,
+    group: name === 'Program blocks' ? '' : groupName,
     isConsistent: it.isConsistent ?? attr(a, 'IsConsistent') ?? null,
     memoryLayout: it.memoryLayout || attr(a, 'MemoryLayout') || null,
     modifiedDate: it.modifiedDate || attr(a, 'ModifiedDate') || null,
-    qualifiedPath: groupPath + '/' + name
-  }
-  const label = kind === 'DB' ? 'DB' : kind
-  rec.qualified = number != null ? `${label}${number} "${name}"` : `${kind || ''} "${name}"`
-  res.blocks.push(rec)
+    qualifiedPath: `${groupName}/${name}`,
+    qualifiedBare: number != null ? `${label}${number} "${name}"` : `${kind || ''} "${name}"`,
+    members: []
+  })
 }
 
-main().catch((e) => { console.error('FATAL', e); process.exit(1) })
+main().catch((e) => { console.error('FATAL', e); if (e && e.stack) console.error(e.stack); process.exit(1) })
