@@ -1,0 +1,34 @@
+{
+  "kind": "fc",
+  "tool": "PlcBuildAndImport",
+  "_deprecated": "已弃用：condition/source 含表达式，超出 PlcBuildAndImport 单变量 DSL 能力，编译必报 Tag not defined。改用 templates/plc/scl-examples/FC_BasicScaleLimit.scl 外部 SCL 导入。",
+  "description": "通用线性缩放与限幅块。",
+  "json": {
+    "blockName": "FC_BasicScaleLimit",
+    "blockNumber": 120,
+    "inputs": [
+      { "name": "RawValue", "datatype": "Real" },
+      { "name": "RawMin", "datatype": "Real" },
+      { "name": "RawMax", "datatype": "Real" },
+      { "name": "EngMin", "datatype": "Real" },
+      { "name": "EngMax", "datatype": "Real" }
+    ],
+    "outputs": [
+      { "name": "EngValue", "datatype": "Real" },
+      { "name": "Valid", "datatype": "Bool" }
+    ],
+    "structuredText": {
+      "operations": [
+        { "op": "if", "condition": "RawMax <> RawMin" },
+        { "op": "line", "text": "EngValue := EngMin + ((RawValue - RawMin) * (EngMax - EngMin) / (RawMax - RawMin));", "indent": 1 },
+        { "op": "line", "text": "EngValue := LIMIT(MN := EngMin, IN := EngValue, MX := EngMax);", "indent": 1 },
+        { "op": "assignment", "target": "Valid", "literalValue": "TRUE", "indent": 1 },
+        { "op": "else" },
+        { "op": "assignment", "target": "EngValue", "source": "EngMin", "indent": 1 },
+        { "op": "assignment", "target": "Valid", "literalValue": "FALSE", "indent": 1 },
+        { "op": "endif" }
+      ]
+    }
+  }
+}
+

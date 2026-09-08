@@ -1,0 +1,40 @@
+{
+  "kind": "fb",
+  "tool": "PlcBuildAndImport",
+  "_deprecated": "已弃用：含 TON 调用与表达式条件，超出 DSL 能力。改用 templates/plc/scl-examples/FB_TimerCounterDemo.scl 外部 SCL 导入。",
+  "description": "通用定时器/计数器示例块，展示 TON 与基本计数逻辑的 SCL 结构。",
+  "json": {
+    "blockName": "FB_TimerCounterDemo",
+    "blockNumber": 130,
+    "inputs": [
+      { "name": "Enable", "datatype": "Bool" },
+      { "name": "CountPulse", "datatype": "Bool" },
+      { "name": "Reset", "datatype": "Bool" },
+      { "name": "PresetCount", "datatype": "DInt" }
+    ],
+    "outputs": [
+      { "name": "DelayedDone", "datatype": "Bool" },
+      { "name": "CounterDone", "datatype": "Bool" },
+      { "name": "CountValue", "datatype": "DInt" }
+    ],
+    "statics": [
+      { "name": "LastCountPulse", "datatype": "Bool" },
+      { "name": "Counter", "datatype": "DInt" },
+      { "name": "OnDelay", "datatype": "TON" }
+    ],
+    "structuredText": {
+      "operations": [
+        { "op": "line", "text": "OnDelay(IN := Enable, PT := T#2s);" },
+        { "op": "assignment", "target": "DelayedDone", "source": "OnDelay.Q" },
+        { "op": "if", "condition": "Reset" },
+        { "op": "assignment", "target": "Counter", "literalValue": "0", "indent": 1 },
+        { "op": "elsif", "condition": "CountPulse AND NOT LastCountPulse" },
+        { "op": "assignment", "target": "Counter", "source": "Counter + 1", "indent": 1 },
+        { "op": "endif" },
+        { "op": "assignment", "target": "LastCountPulse", "source": "CountPulse" },
+        { "op": "assignment", "target": "CountValue", "source": "Counter" },
+        { "op": "assignment", "target": "CounterDone", "source": "Counter >= PresetCount" }
+      ]
+    }
+  }
+}

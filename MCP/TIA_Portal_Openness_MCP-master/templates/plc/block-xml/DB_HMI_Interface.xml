@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V21" />
+  <DocumentInfo><Created>2026-05-12T00:00:00.0000000Z</Created><ExportSetting>None</ExportSetting><InstalledProducts /></DocumentInfo>
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+          <Section Name="Static">
+            <Member Name="CmdEnable" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="CmdDisable" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="CmdReset" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="CmdApply" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="_pad1_0_4" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="_pad1_0_5" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="_pad1_0_6" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="_pad1_0_7" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="StatusActive" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="StatusError" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="StatusWarning" Datatype="Bool"><StartValue>false</StartValue></Member>
+            <Member Name="StepNo" Datatype="Int"><StartValue>0</StartValue></Member>
+            <Member Name="Setpoint" Datatype="Real"><StartValue>0.0</StartValue></Member>
+            <Member Name="Actual" Datatype="Real"><StartValue>0.0</StartValue></Member>
+            <Member Name="Output" Datatype="Real"><StartValue>0.0</StartValue></Member>
+            <Member Name="OutputMin" Datatype="Real"><StartValue>0.0</StartValue></Member>
+            <Member Name="OutputMax" Datatype="Real"><StartValue>100.0</StartValue></Member>
+            <Member Name="CounterPreset" Datatype="DInt"><StartValue>10</StartValue></Member>
+            <Member Name="CounterValue" Datatype="DInt"><StartValue>0</StartValue></Member>
+          </Section>
+        </Sections>
+      </Interface>
+      <MemoryLayout>Standard</MemoryLayout>
+      <Name>DB_HMI_Interface</Name>
+      <Namespace />
+      <Number>200</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+  </SW.Blocks.GlobalDB>
+</Document>

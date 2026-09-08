@@ -70,7 +70,7 @@
 > 本项目基于开源项目 Cherry Studio 构建，并保留原项目的版权声明与许可证。
 > 本软件按 [GNU Affero 通用公共许可证 v3.0（AGPL-3.0）](https://www.gnu.org/licenses/agpl-3.0.html) 分发。
 >
-> 源码获取：<https://example.com/plc-studio-source>
+> 源码获取：<https://github.com/liukailun007/PLC-Studio>
 >
 > ---
 >
@@ -79,7 +79,7 @@
 > This project is built on the open-source project Cherry Studio, with its copyright notice and license retained.
 > This software is distributed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html).
 >
-> Source code: <https://example.com/plc-studio-source>
+> Source code: <https://github.com/liukailun007/PLC-Studio>
 
 Cherry Studio is a desktop client that supports multiple LLM providers, available on Windows, Mac and Linux.
 

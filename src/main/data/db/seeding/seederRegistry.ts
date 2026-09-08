@@ -5,6 +5,7 @@ import { DefaultAssistantSeeder } from './seeders/defaultAssistantSeeder'
 import { MiniAppSeeder } from './seeders/miniAppSeeder'
 import { PreferenceSeeder } from './seeders/preferenceSeeder'
 import { PresetProviderSeeder } from './seeders/presetProviderSeeder'
+import { TiaEngineerAgentSeeder } from './seeders/tiaEngineerAgentSeeder'
 import { TiaMcpSeeder } from './seeders/tiaMcpSeeder'
 import { TranslateLanguageSeeder } from './seeders/translateLanguageSeeder'
 
@@ -25,5 +26,6 @@ export const seeders: ISeeder[] = [
   new TranslateLanguageSeeder(),
   new PresetProviderSeeder(),
   new MiniAppSeeder(),
-  new TiaMcpSeeder()
+  new TiaMcpSeeder(),
+  new TiaEngineerAgentSeeder()
 ]

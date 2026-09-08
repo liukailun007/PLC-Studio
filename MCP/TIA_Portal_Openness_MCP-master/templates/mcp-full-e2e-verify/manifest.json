@@ -1,0 +1,11 @@
+{
+  "name": "mcp-full-e2e-verify",
+  "plcBlocksDir": "plc/blocks",
+  "plcTypesDir": "plc/types",
+  "hmiScreensDir": "hmi/screens",
+  "hmiTagTablesDir": "hmi/tags",
+  "plcBlockGroupPath": "",
+  "plcTypeGroupPath": "",
+  "hmiScreenFolderPath": "",
+  "hmiTagTableFolderPath": ""
+}

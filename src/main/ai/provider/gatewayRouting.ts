@@ -16,6 +16,7 @@ import { SystemProviderIds } from '@shared/utils/systemProviderId'
 
 import { resolveAihubmixChatRoute } from './custom/aihubmix/aihubmixRouting'
 import { resolveDmxapiChatRoute } from './custom/dmxapi/dmxapiRouting'
+import { resolveOpenAIHubChatRoute } from './custom/openai-hub/openaiHubRouting'
 
 export interface GatewayModelRoute {
   endpointType: EndpointType
@@ -26,7 +27,8 @@ type GatewayModelRouter = (modelId: string) => GatewayModelRoute
 
 const GATEWAY_MODEL_ROUTERS: Partial<Record<string, GatewayModelRouter>> = {
   [SystemProviderIds.aihubmix]: resolveAihubmixChatRoute,
-  [SystemProviderIds.dmxapi]: resolveDmxapiChatRoute
+  [SystemProviderIds.dmxapi]: resolveDmxapiChatRoute,
+  [SystemProviderIds['openai-hub']]: resolveOpenAIHubChatRoute
 }
 
 /**

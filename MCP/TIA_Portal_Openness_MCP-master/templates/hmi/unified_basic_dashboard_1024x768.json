@@ -1,0 +1,37 @@
+{
+  "screen": {
+    "BackColor": "0xFFF4F7FB"
+  },
+  "items": [
+    { "type": "Rectangle", "name": "Header", "left": 0, "top": 0, "width": 1024, "height": 64, "properties": { "BackColor": "0xFF1F2937" } },
+    { "type": "Text", "name": "Title", "left": 24, "top": 14, "width": 360, "height": 32, "text": "Basic Dashboard", "properties": { "ForeColor": "0xFFFFFFFF" }, "font": { "Size": 23 } },
+    { "type": "Text", "name": "HeaderNote", "left": 720, "top": 20, "width": 280, "height": 22, "text": "Unified HMI / Basic", "properties": { "ForeColor": "0xFFC7D2FE" }, "font": { "Size": 12 } },
+    { "type": "Rectangle", "name": "HeaderAccent", "left": 0, "top": 60, "width": 1024, "height": 4, "properties": { "BackColor": "0xFF3B82F6" } },
+    { "type": "Rectangle", "name": "ShadowStatus", "left": 28, "top": 96, "width": 300, "height": 214, "properties": { "BackColor": "0x140F172A" } },
+    { "type": "Rectangle", "name": "Panel_Status", "left": 24, "top": 92, "width": 300, "height": 214, "properties": { "BackColor": "0xFFFFFFFF", "BorderColor": "0xFFD6DEE8", "BorderWidth": 1 } },
+    { "type": "Text", "name": "StatusTitle", "left": 48, "top": 114, "width": 180, "height": 26, "text": "Status", "properties": { "ForeColor": "0xFF172033" }, "font": { "Size": 17 } },
+    { "type": "Text", "name": "ActiveLabel", "left": 48, "top": 160, "width": 110, "height": 20, "text": "Active", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 12 } },
+    { "type": "Rectangle", "name": "Lamp_Active", "left": 48, "top": 188, "width": 112, "height": 48, "properties": { "BackColor": "0xFFDCFCE7", "BorderColor": "0xFF86EFAC", "BorderWidth": 1 } },
+    { "type": "Text", "name": "ActiveText", "left": 82, "top": 202, "width": 48, "height": 20, "text": "ON", "properties": { "ForeColor": "0xFF166534" }, "font": { "Size": 14 } },
+    { "type": "Text", "name": "ErrorLabel", "left": 188, "top": 160, "width": 110, "height": 20, "text": "Error", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 12 } },
+    { "type": "Rectangle", "name": "Lamp_Error", "left": 188, "top": 188, "width": 112, "height": 48, "properties": { "BackColor": "0xFFFFF1F2", "BorderColor": "0xFFFCA5A5", "BorderWidth": 1 } },
+    { "type": "Text", "name": "ErrorText", "left": 222, "top": 202, "width": 52, "height": 20, "text": "ERR", "properties": { "ForeColor": "0xFFB91C1C" }, "font": { "Size": 14 } },
+    { "type": "Rectangle", "name": "ShadowValues", "left": 352, "top": 96, "width": 652, "height": 214, "properties": { "BackColor": "0x140F172A" } },
+    { "type": "Rectangle", "name": "Panel_Values", "left": 348, "top": 92, "width": 652, "height": 214, "properties": { "BackColor": "0xFFFFFFFF", "BorderColor": "0xFFD6DEE8", "BorderWidth": 1 } },
+    { "type": "Text", "name": "ValuesTitle", "left": 372, "top": 114, "width": 200, "height": 26, "text": "Values", "properties": { "ForeColor": "0xFF172033" }, "font": { "Size": 17 } },
+    { "type": "Text", "name": "SetpointLabel", "left": 372, "top": 162, "width": 120, "height": 20, "text": "Setpoint", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 12 } },
+    { "type": "IOField", "name": "IO_Setpoint", "left": 372, "top": 190, "width": 132, "height": 42, "properties": { "BackColor": "0xFFFFFFFF", "ForeColor": "0xFF172033", "BorderColor": "0xFF94A3B8", "BorderWidth": 1 }, "font": { "Size": 16 } },
+    { "type": "Text", "name": "ActualLabel", "left": 532, "top": 162, "width": 120, "height": 20, "text": "Actual", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 12 } },
+    { "type": "IOField", "name": "IO_Actual", "left": 532, "top": 190, "width": 132, "height": 42, "properties": { "BackColor": "0xFFFFFFFF", "ForeColor": "0xFF172033", "BorderColor": "0xFF94A3B8", "BorderWidth": 1 }, "font": { "Size": 16 } },
+    { "type": "Text", "name": "OutputLabel", "left": 692, "top": 162, "width": 120, "height": 20, "text": "Output", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 12 } },
+    { "type": "IOField", "name": "IO_Output", "left": 692, "top": 190, "width": 132, "height": 42, "properties": { "BackColor": "0xFFFFFFFF", "ForeColor": "0xFF172033", "BorderColor": "0xFF94A3B8", "BorderWidth": 1 }, "font": { "Size": 16 } },
+    { "type": "Rectangle", "name": "ShadowControls", "left": 28, "top": 344, "width": 976, "height": 206, "properties": { "BackColor": "0x140F172A" } },
+    { "type": "Rectangle", "name": "Panel_Controls", "left": 24, "top": 340, "width": 976, "height": 206, "properties": { "BackColor": "0xFFFFFFFF", "BorderColor": "0xFFD6DEE8", "BorderWidth": 1 } },
+    { "type": "Text", "name": "ControlsTitle", "left": 48, "top": 362, "width": 200, "height": 26, "text": "Controls", "properties": { "ForeColor": "0xFF172033" }, "font": { "Size": 17 } },
+    { "type": "Button", "name": "Btn_Enable", "left": 48, "top": 418, "width": 148, "height": 52, "text": "ENABLE", "properties": { "BackColor": "0xFF2563EB", "ForeColor": "0xFFFFFFFF", "BorderColor": "0xFF1D4ED8", "BorderWidth": 1 }, "font": { "Size": 15 } },
+    { "type": "Button", "name": "Btn_Disable", "left": 220, "top": 418, "width": 148, "height": 52, "text": "DISABLE", "properties": { "BackColor": "0xFFF8FAFC", "ForeColor": "0xFF172033", "BorderColor": "0xFFCBD5E1", "BorderWidth": 1 }, "font": { "Size": 15 } },
+    { "type": "Button", "name": "Btn_Reset", "left": 392, "top": 418, "width": 148, "height": 52, "text": "RESET", "properties": { "BackColor": "0xFFFFFBEB", "ForeColor": "0xFF92400E", "BorderColor": "0xFFF59E0B", "BorderWidth": 1 }, "font": { "Size": 15 } },
+    { "type": "Rectangle", "name": "Footer", "left": 24, "top": 690, "width": 976, "height": 46, "properties": { "BackColor": "0xFFEFF4FA", "BorderColor": "0xFFD6DEE8", "BorderWidth": 1 } },
+    { "type": "Text", "name": "FooterText", "left": 48, "top": 704, "width": 920, "height": 18, "text": "System status, command state and process values", "properties": { "ForeColor": "0xFF607086" }, "font": { "Size": 11 } }
+  ]
+}

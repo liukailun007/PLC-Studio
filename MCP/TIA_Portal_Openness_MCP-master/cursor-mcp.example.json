@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "tia-portal": {
+      "command": "C:\\REPLACE_ME\\TIA_MCP_交付包\\tools\\tiaportal-mcp\\src\\TiaMcpServer\\bin\\Release\\net48\\TiaMcpServer.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}

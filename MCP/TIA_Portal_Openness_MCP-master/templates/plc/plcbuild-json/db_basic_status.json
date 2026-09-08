@@ -1,0 +1,34 @@
+{
+  "kind": "globaldb",
+  "tool": "PlcBuildAndImport",
+  "description": "通用状态 DB，使用 UDT_BasicStatus。每个成员带中文注释。",
+  "json": {
+    "dbName": "DB_BasicStatus",
+    "dbNumber": 100,
+    "staticMembers": [
+      {
+        "name": "Status",
+        "datatype": "\"UDT_BasicStatus\"",
+        "commentZhCn": "设备状态结构（引用 UDT_BasicStatus）"
+      },
+      {
+        "name": "EnableRequest",
+        "datatype": "Bool",
+        "startValue": "false",
+        "commentZhCn": "使能请求（来自 HMI/上位）"
+      },
+      {
+        "name": "ResetRequest",
+        "datatype": "Bool",
+        "startValue": "false",
+        "commentZhCn": "复位请求（来自 HMI/上位）"
+      },
+      {
+        "name": "CycleCounter",
+        "datatype": "DInt",
+        "startValue": "0",
+        "commentZhCn": "循环计数器（每周期 +1，用于心跳/诊断）"
+      }
+    ]
+  }
+}

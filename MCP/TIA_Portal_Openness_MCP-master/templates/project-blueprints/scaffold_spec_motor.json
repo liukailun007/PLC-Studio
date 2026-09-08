@@ -1,0 +1,280 @@
+{
+  "_comment": "ScaffoldProject spec template. Replace __BUNDLE__ with the repo/bundle root absolute path, then call ScaffoldProject(spec=<this json>). All PLC blocks/HMI here are built from verified building blocks (compile = 0 errors).",
+  "projectName": "Motor_Demo",
+  "directoryPath": "",
+  "plcName": "PLC_1",
+  "plcFamily": "S7-1500",
+  "hmiName": "HMI_1",
+  "hmiFamily": "WinCCUnifiedPC",
+  "hmiSoftwarePath": "HMI_RT_1",
+  "connectionName": "HMI_Connection_1",
+  "udt": [
+    {
+      "name": "UDT_BasicStatus",
+      "members": [
+        {
+          "name": "Active",
+          "datatype": "Bool",
+          "commentZhCn": "运行/激活标志"
+        },
+        {
+          "name": "Ready",
+          "datatype": "Bool",
+          "commentZhCn": "就绪标志（可启动）"
+        },
+        {
+          "name": "Error",
+          "datatype": "Bool",
+          "commentZhCn": "故障标志"
+        },
+        {
+          "name": "Warning",
+          "datatype": "Bool",
+          "commentZhCn": "警告标志"
+        },
+        {
+          "name": "State",
+          "datatype": "Int",
+          "startValue": "0",
+          "commentZhCn": "状态码（0=空闲，>0=各工作状态）"
+        },
+        {
+          "name": "ErrorCode",
+          "datatype": "Int",
+          "startValue": "0",
+          "commentZhCn": "故障代码（0=无故障）"
+        },
+        {
+          "name": "Setpoint",
+          "datatype": "Real",
+          "startValue": "0.0",
+          "commentZhCn": "设定值"
+        },
+        {
+          "name": "Actual",
+          "datatype": "Real",
+          "startValue": "0.0",
+          "commentZhCn": "实际值"
+        },
+        {
+          "name": "Output",
+          "datatype": "Real",
+          "startValue": "0.0",
+          "commentZhCn": "输出值"
+        }
+      ]
+    }
+  ],
+  "globalDb": [
+    {
+      "dbName": "DB_BasicStatus",
+      "dbNumber": 100,
+      "staticMembers": [
+        {
+          "name": "Status",
+          "datatype": "\"UDT_BasicStatus\"",
+          "commentZhCn": "设备状态结构（引用 UDT_BasicStatus）"
+        },
+        {
+          "name": "EnableRequest",
+          "datatype": "Bool",
+          "startValue": "false",
+          "commentZhCn": "使能请求（来自 HMI/上位）"
+        },
+        {
+          "name": "ResetRequest",
+          "datatype": "Bool",
+          "startValue": "false",
+          "commentZhCn": "复位请求（来自 HMI/上位）"
+        },
+        {
+          "name": "CycleCounter",
+          "datatype": "DInt",
+          "startValue": "0",
+          "commentZhCn": "循环计数器（每周期 +1，用于心跳/诊断）"
+        }
+      ]
+    }
+  ],
+  "tagTable": [
+    {
+      "tableName": "Basic_Signals",
+      "tags": [
+        {
+          "name": "Cmd_Enable",
+          "dataTypeName": "Bool",
+          "logicalAddress": "%M0.0"
+        },
+        {
+          "name": "Cmd_Disable",
+          "dataTypeName": "Bool",
+          "logicalAddress": "%M0.1"
+        },
+        {
+          "name": "Cmd_Reset",
+          "dataTypeName": "Bool",
+          "logicalAddress": "%M0.2"
+        },
+        {
+          "name": "Status_Active",
+          "dataTypeName": "Bool",
+          "logicalAddress": "%M0.3"
+        },
+        {
+          "name": "Status_Error",
+          "dataTypeName": "Bool",
+          "logicalAddress": "%M0.4"
+        },
+        {
+          "name": "Value_Setpoint",
+          "dataTypeName": "Real",
+          "logicalAddress": "%MD10"
+        },
+        {
+          "name": "Value_Actual",
+          "dataTypeName": "Real",
+          "logicalAddress": "%MD14"
+        },
+        {
+          "name": "Value_Output",
+          "dataTypeName": "Real",
+          "logicalAddress": "%MD18"
+        }
+      ]
+    }
+  ],
+  "sclSourceFiles": [
+    "__BUNDLE__\\templates\\plc\\scl-examples\\FB_BasicLatch.scl",
+    "__BUNDLE__\\templates\\plc\\scl-examples\\FC_BasicScaleLimit.scl"
+  ],
+  "ladDocs": [
+    {
+      "importPath": "__BUNDLE__\\tools\\tiaportal-mcp\\skill\\lad-cookbook",
+      "name": "MCPVerify_FC_LAD"
+    }
+  ],
+  "hmiScreens": [
+    {
+      "screenName": "主画面",
+      "width": 800,
+      "height": 480,
+      "designJson": {
+        "width": 800,
+        "height": 480,
+        "items": [
+          {
+            "type": "Rectangle",
+            "name": "TitleBar",
+            "left": 0,
+            "top": 0,
+            "width": 800,
+            "height": 56,
+            "properties": {
+              "BackColor": "#1f4e79"
+            }
+          },
+          {
+            "type": "Text",
+            "name": "Title",
+            "left": 16,
+            "top": 14,
+            "width": 500,
+            "height": 28,
+            "text": "电机控制",
+            "properties": {
+              "ForeColor": "#ffffff"
+            },
+            "font": {
+              "Size": 18
+            }
+          },
+          {
+            "type": "Button",
+            "name": "BTN_Start",
+            "left": 60,
+            "top": 120,
+            "width": 160,
+            "height": 64,
+            "text": "启动",
+            "properties": {
+              "BackColor": "#2e7d32",
+              "ForeColor": "#ffffff"
+            }
+          },
+          {
+            "type": "Button",
+            "name": "BTN_Stop",
+            "left": 260,
+            "top": 120,
+            "width": 160,
+            "height": 64,
+            "text": "停止",
+            "properties": {
+              "BackColor": "#c62828",
+              "ForeColor": "#ffffff"
+            }
+          },
+          {
+            "type": "Rectangle",
+            "name": "Lamp_Run",
+            "left": 480,
+            "top": 120,
+            "width": 40,
+            "height": 40,
+            "properties": {
+              "BackColor": "#9e9e9e"
+            }
+          },
+          {
+            "type": "Text",
+            "name": "Lbl_Run",
+            "left": 530,
+            "top": 128,
+            "width": 160,
+            "height": 24,
+            "text": "运行",
+            "properties": {
+              "ForeColor": "#000000"
+            },
+            "font": {
+              "Size": 14
+            }
+          },
+          {
+            "type": "Text",
+            "name": "Lbl_Speed",
+            "left": 60,
+            "top": 230,
+            "width": 120,
+            "height": 24,
+            "text": "速度",
+            "properties": {
+              "ForeColor": "#000000"
+            },
+            "font": {
+              "Size": 14
+            }
+          },
+          {
+            "type": "IOField",
+            "name": "IO_Speed",
+            "left": 180,
+            "top": 225,
+            "width": 200,
+            "height": 40
+          }
+        ]
+      }
+    }
+  ],
+  "hmiTags": [
+    {
+      "tagTableName": "Default tag table",
+      "tagName": "Tag_Run",
+      "hmiDataType": "Bool",
+      "address": "%DB100.DBX0.0"
+    }
+  ],
+  "compile": true,
+  "save": true
+}

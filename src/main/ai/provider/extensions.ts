@@ -34,6 +34,10 @@ import { createVoyage, type VoyageProviderSettings } from 'voyage-ai-provider'
 import { type AihubmixProviderSettings, createAihubmix } from './custom/aihubmix/aihubmixProvider'
 import { createDashScopeProvider, type DashScopeProviderSettings } from './custom/dashscope/dashscopeProvider'
 import { createDmxapiProvider, type DmxapiProviderSettings } from './custom/dmxapi/dmxapiProvider'
+import {
+  createOpenAIHubProvider,
+  type OpenAIHubProviderSettings
+} from './custom/openai-hub/openaiHubProvider'
 import { createGatewayWithImageModel } from './custom/gateway/gatewayProvider'
 import {
   createLocalEmbeddingProvider,
@@ -229,6 +233,16 @@ export const DmxapiExtension = ProviderExtension.create({
 } as const satisfies ProviderExtensionConfig<DmxapiProviderSettings, ProviderV3, 'dmxapi'>)
 
 /**
+ * OpenAI-Hub Extension — multi-backend gateway: one key dispatches a chat model
+ * to its vendor-native endpoint by id prefix (claude→anthropic, gemini→google,
+ * gpt/o→openai, else→openai-compatible chat). See `openaiHubRouting.ts`.
+ */
+export const OpenaiHubExtension = ProviderExtension.create({
+  name: 'openai-hub',
+  create: createOpenAIHubProvider
+} as const satisfies ProviderExtensionConfig<OpenAIHubProviderSettings, ProviderV3, 'openai-hub'>)
+
+/**
  * SiliconFlow Extension - OpenAI-compatible chat + embedding, URL-returning sync image generation.
  */
 export const SiliconExtension = ProviderExtension.create({
@@ -341,6 +355,7 @@ export const extensions = [
   NewApiExtension,
   PpioExtension,
   DmxapiExtension,
+  OpenaiHubExtension,
   SiliconExtension,
   ZhipuExtension,
   DoubaoExtension,

@@ -1,0 +1,60 @@
+﻿// ============================================================================
+//  FB_TimerCounterDemo —— 边沿计数器示例功能块
+//  ---------------------------------------------------------------------------
+//  功能：对计数脉冲 CountPulse 的上升沿进行计数，累计值达到预设值后置位完成标志，
+//        并输出运行标志、剩余计数与完成百分比，方便 HMI 直接显示进度。
+//  适用：S7-1200 / S7-1500（优化访问）。纯布尔/整型/实型逻辑，不依赖定时器。
+//  作者：TIA MCP 示例库     版本：0.3
+// ============================================================================
+FUNCTION_BLOCK "FB_TimerCounterDemo"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.3
+   VAR_INPUT
+      Enable      : Bool;   // 使能：为 TRUE 时才接受计数脉冲
+      CountPulse  : Bool;   // 计数脉冲：每检测到一个上升沿，累计值 +1
+      Reset       : Bool;   // 复位：高电平有效，将累计值清零（优先级最高）
+      PresetCount : DInt;   // 预设计数值：累计值达到该值时置位 CounterDone
+   END_VAR
+
+   VAR_OUTPUT
+      Running        : Bool;   // 运行中：已使能且尚未完成
+      CounterDone    : Bool;   // 计数完成：累计值 >= 预设值
+      CountValue     : DInt;   // 当前累计计数值（每周期输出）
+      RemainingCount : DInt;   // 剩余计数 = 预设值 - 累计值（不小于 0）
+      DonePercent    : Real;   // 完成百分比 0.0~100.0，供 HMI 进度条显示
+   END_VAR
+
+   VAR
+      LastCountPulse : Bool;   // 上一扫描周期的脉冲状态，用于上升沿检测
+      Accum          : DInt;   // 内部累计计数（静态保持，避免输出未初始化告警）
+   END_VAR
+
+BEGIN
+   // --- 计数与复位逻辑 ----------------------------------------------------
+   IF Reset THEN
+      Accum := 0;                                        // 复位优先：清零累计值
+   ELSIF Enable AND CountPulse AND NOT LastCountPulse THEN
+      Accum := Accum + 1;                                // 仅在使能且脉冲上升沿时累加
+   END_IF;
+   LastCountPulse := CountPulse;                         // 记录本周期脉冲，供下次沿检测
+   CountValue     := Accum;                              // 累计值每周期输出，保证已赋值
+
+   // --- 完成与运行状态 ----------------------------------------------------
+   CounterDone := (PresetCount > 0) AND (Accum >= PresetCount);
+   Running     := Enable AND NOT CounterDone;
+
+   // --- 剩余计数与完成百分比（供 HMI 显示） --------------------------------
+   IF PresetCount > 0 THEN
+      IF Accum < PresetCount THEN
+         RemainingCount := PresetCount - Accum;
+      ELSE
+         RemainingCount := 0;                            // 已超过预设值则剩余记 0
+      END_IF;
+      DonePercent := LIMIT(MN := 0.0,
+                           IN := DINT_TO_REAL(Accum) / DINT_TO_REAL(PresetCount) * 100.0,
+                           MX := 100.0);
+   ELSE
+      RemainingCount := 0;                               // 未设定预设值时不计算剩余
+      DonePercent    := 0.0;
+   END_IF;
+END_FUNCTION_BLOCK

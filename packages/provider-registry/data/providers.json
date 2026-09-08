@@ -35,8 +35,16 @@
       "defaultChatEndpoint": "openai-chat-completions",
       "description": "OpenAI-Hub - AI model provider",
       "endpointConfigs": {
+        "anthropic-messages": {
+          "adapterFamily": "openai-hub",
+          "baseUrl": "https://api.openai-hub.net"
+        },
+        "google-generate-content": {
+          "adapterFamily": "openai-hub",
+          "baseUrl": "https://api.openai-hub.net/v1beta/"
+        },
         "openai-chat-completions": {
-          "adapterFamily": "openai-compatible",
+          "adapterFamily": "openai-hub",
           "baseUrl": "https://api.openai-hub.net/v1"
         }
       },
@@ -1885,5 +1893,5 @@
       "presetProviderId": "minimax"
     }
   ],
-  "version": "cc183eedfe6e6c80"
+  "version": "02e60038bff9c109"
 }

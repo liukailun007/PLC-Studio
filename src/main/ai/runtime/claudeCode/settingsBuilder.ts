@@ -387,7 +387,14 @@ export async function buildClaudeCodeSessionSettings(
     settings: { autoCompactEnabled: true },
     includePartialMessages: true,
     permissionMode: agentConfig?.permission_mode,
-    maxTurns: agentConfig?.max_turns,
+    // Loop guard: no rendered control sets max_turns and the resource editor
+    // even strips it, so an unset agent would run the Claude Agent SDK with NO
+    // --max-turns (SDK omits the flag on undefined → unlimited). Bound unset
+    // runs so a non-converging model (e.g. Gemini-on-openai-hub) can't burn the
+    // token budget endlessly. 100 matches the builtin assistant's seeded cap
+    // (DEFAULT_MAX_TURNS) — stops runaway tool churn without truncating normal
+    // multi-step builds. A user-set value is respected.
+    maxTurns: agentConfig?.max_turns ?? 100,
     allowedTools: finalAllowedTools,
     disallowedTools,
     plugins,

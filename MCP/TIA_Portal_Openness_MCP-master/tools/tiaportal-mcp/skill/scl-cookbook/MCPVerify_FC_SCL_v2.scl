@@ -1,0 +1,48 @@
+﻿FUNCTION "MCPVerify_FC_SCL_v2" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Mode : Int;   // 0..3 for CASE
+      K : Int;      // FOR upper bound (clamped)
+   END_VAR
+
+   VAR_OUTPUT 
+      SumOut : Int;
+      St : Int;
+   END_VAR
+
+   VAR_TEMP 
+      i : Int;
+      acc : Int;
+   END_VAR
+
+
+BEGIN
+	acc := 0;
+	
+	CASE Mode OF
+	    0:
+	        St := 0;
+	    1:
+	        St := 1;
+	    2:
+	        St := 2;
+	    ELSE
+	        St := 9;
+	END_CASE;
+	
+	FOR i := 1 TO 5 DO
+	    IF i > K THEN
+	        EXIT;
+	    END_IF;
+	    acc := acc + i;
+	END_FOR;
+	
+	i := 0;
+	WHILE i < 3 DO
+	    acc := acc + 1;
+	    i := i + 1;
+	END_WHILE;
+	
+	SumOut := acc;
+END_FUNCTION

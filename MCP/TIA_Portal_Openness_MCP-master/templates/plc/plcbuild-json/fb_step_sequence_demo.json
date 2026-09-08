@@ -1,0 +1,51 @@
+{
+  "kind": "fb",
+  "tool": "PlcBuildAndImport",
+  "_deprecated": "已弃用：CASE 状态机 DSL 无法表达，且条件为表达式。改用 templates/plc/scl-examples/FB_StepSequenceDemo.scl 外部 SCL 导入。",
+  "description": "通用步序状态机示例块，只表达基础 CASE/IF/复位/步号输出结构。",
+  "json": {
+    "blockName": "FB_StepSequenceDemo",
+    "blockNumber": 140,
+    "inputs": [
+      { "name": "Enable", "datatype": "Bool" },
+      { "name": "Next", "datatype": "Bool" },
+      { "name": "Reset", "datatype": "Bool" },
+      { "name": "ConditionOk", "datatype": "Bool" }
+    ],
+    "outputs": [
+      { "name": "StepNo", "datatype": "Int" },
+      { "name": "Ready", "datatype": "Bool" },
+      { "name": "Busy", "datatype": "Bool" },
+      { "name": "Done", "datatype": "Bool" }
+    ],
+    "statics": [
+      { "name": "State", "datatype": "Int" },
+      { "name": "LastNext", "datatype": "Bool" }
+    ],
+    "structuredText": {
+      "operations": [
+        { "op": "if", "condition": "Reset OR NOT Enable" },
+        { "op": "assignment", "target": "State", "literalValue": "0", "indent": 1 },
+        { "op": "else" },
+        { "op": "line", "text": "CASE State OF", "indent": 1 },
+        { "op": "line", "text": "0:", "indent": 2 },
+        { "op": "line", "text": "IF ConditionOk THEN State := 10; END_IF;", "indent": 3 },
+        { "op": "line", "text": "10:", "indent": 2 },
+        { "op": "line", "text": "IF Next AND NOT LastNext THEN State := 20; END_IF;", "indent": 3 },
+        { "op": "line", "text": "20:", "indent": 2 },
+        { "op": "line", "text": "IF Next AND NOT LastNext THEN State := 30; END_IF;", "indent": 3 },
+        { "op": "line", "text": "30:", "indent": 2 },
+        { "op": "line", "text": "IF NOT ConditionOk THEN State := 0; END_IF;", "indent": 3 },
+        { "op": "line", "text": "ELSE", "indent": 2 },
+        { "op": "line", "text": "State := 0;", "indent": 3 },
+        { "op": "line", "text": "END_CASE;", "indent": 1 },
+        { "op": "endif" },
+        { "op": "assignment", "target": "LastNext", "source": "Next" },
+        { "op": "assignment", "target": "StepNo", "source": "State" },
+        { "op": "assignment", "target": "Ready", "source": "State = 0" },
+        { "op": "assignment", "target": "Busy", "source": "(State > 0) AND (State < 30)" },
+        { "op": "assignment", "target": "Done", "source": "State = 30" }
+      ]
+    }
+  }
+}

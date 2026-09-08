@@ -262,7 +262,8 @@ export async function resolveProviderAiSdkConfig(
     },
     { match: (_, id) => id === 'newapi', build: withSelectedApiKey(buildNewApiConfig) },
     { match: (_, id) => id === 'aihubmix', build: withSelectedApiKey(buildAiHubMixConfig) },
-    { match: (_, id) => id === 'dmxapi', build: withSelectedApiKey(buildDmxapiConfig) }
+    { match: (_, id) => id === 'dmxapi', build: withSelectedApiKey(buildDmxapiConfig) },
+    { match: (_, id) => id === 'openai-hub', build: withSelectedApiKey(buildOpenaiHubConfig) }
   ]
 
   const builder = builders.find((b) => b.match(provider, aiSdkProviderId))
@@ -719,6 +720,20 @@ function buildDmxapiConfig(ctx: BuilderContext): ProviderConfig<'dmxapi'> {
     endpoint: ctx.endpoint,
     providerSettings: {
       ...ctx.baseConfig,
+      endpointBaseURLs: buildEndpointBaseURLs(ctx.actualProvider),
+      headers: { ...defaultAppHeaders(), ...getExtraHeaders(ctx.actualProvider) }
+    }
+  }
+}
+
+function buildOpenaiHubConfig(ctx: BuilderContext): ProviderConfig<'openai-hub'> {
+  return {
+    providerId: 'openai-hub',
+    endpoint: ctx.endpoint,
+    providerSettings: {
+      ...ctx.baseConfig,
+      // Per-endpoint native URLs (chat /v1, anthropic root, google /v1beta) so the
+      // claude/gemini families DO NOT collide on the OpenAI chat path.
       endpointBaseURLs: buildEndpointBaseURLs(ctx.actualProvider),
       headers: { ...defaultAppHeaders(), ...getExtraHeaders(ctx.actualProvider) }
     }

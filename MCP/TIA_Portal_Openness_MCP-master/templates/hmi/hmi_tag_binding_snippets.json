@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "2026-05-12",
+  "title": "HMI external tag binding — symbolic vs absolute (reference only)",
+  "description": "Human-readable examples. Prefer symbolic when PLC compiles and connection uses correct S7-1200/1500 driver. Absolute strings must be copied from TIA for optimized DBs.",
+  "plcSoftwareNameExample": "PLC_Main",
+  "connectionName": "HMI_Connection_1",
+  "symbolicExamples": [
+    { "hmiTag": "HMI_CmdEnable", "plcTag": "DB_HMI_Interface.CmdEnable", "hmiDataType": "Bool" },
+    { "hmiTag": "HMI_ValueSetpoint", "plcTag": "DB_HMI_Interface.Setpoint", "hmiDataType": "Real" }
+  ],
+  "absoluteFallbackNotes": [
+    "Only when symbolic stays red after connection/driver/subnet checks.",
+    "For optimized DB, do NOT hand-guess byte offsets; use TIA 'Copy address' or disable optimized access on a dedicated HMI shadow DB.",
+    "Example shape (non-optimized DB200, first Bool member — illustrative only): %DB200.DBX0.0"
+  ]
+}

@@ -109,6 +109,7 @@ export function resolveProviderOptionsKey(
     case 'aihubmix':
     case SystemProviderIds.dmxapi:
     case SystemProviderIds.gateway:
+    case SystemProviderIds['openai-hub']:
       if (context?.endpointType === ENDPOINT_TYPE.ANTHROPIC_MESSAGES) return 'anthropic'
       if (context?.endpointType === ENDPOINT_TYPE.GOOGLE_GENERATE_CONTENT) return 'google'
       if (context?.endpointType === ENDPOINT_TYPE.OPENAI_RESPONSES) return 'openai'

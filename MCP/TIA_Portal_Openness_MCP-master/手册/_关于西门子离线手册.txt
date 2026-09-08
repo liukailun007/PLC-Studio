@@ -1,0 +1,10 @@
+本交付包不附带西门子官方完整手册原文。
+项目生成所需的 MCP 调用规则、PLC 指令摘要、HMI 画面规范、工具能力矩阵和运行手册已经随包提供：
+- README.md
+- docs/basic-plc-template-library.md
+- docs/HMI_Unified_画面生成规范与模板.md
+- docs/full-project-generation-runbook.md
+- docs/tools/*.md
+- tools/tiaportal-mcp/skill/SKILL.md
+
+若遇到超出本包覆盖范围的 TIA Portal 专用细节，应先通过 MCP 读回、反射和临时项目验证确认。

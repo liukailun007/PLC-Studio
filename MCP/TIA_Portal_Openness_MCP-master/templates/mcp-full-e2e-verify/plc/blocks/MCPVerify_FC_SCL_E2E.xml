@@ -1,0 +1,322 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V21" />
+  <DocumentInfo><Created>2000-01-01T00:00:00.0000000Z</Created><ExportSetting>None</ExportSetting><InstalledProducts /></DocumentInfo>
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+          <Section Name="Input"><Member Name="Enable" Datatype="Bool" /><Member Name="Mode" Datatype="Int" /><Member Name="InInt" Datatype="Int" /><Member Name="InReal" Datatype="Real" /></Section>
+          <Section Name="Output"><Member Name="OutBool" Datatype="Bool" /><Member Name="OutInt" Datatype="Int" /><Member Name="OutDInt" Datatype="DInt" /><Member Name="OutReal" Datatype="Real" /><Member Name="OutWord" Datatype="Word" /></Section>
+          <Section Name="InOut" />
+          <Section Name="Temp"><Member Name="i" Datatype="Int" /><Member Name="acc" Datatype="Int" /></Section>
+          <Section Name="Constant" />
+          <Section Name="Return"><Member Name="Ret_Val" Datatype="Void" /></Section>
+        </Sections>
+      </Interface>
+      <AutoNumber>false</AutoNumber>
+      <MemoryLayout>Optimized</MemoryLayout><Name>MCPVerify_FC_SCL_E2E</Name><Namespace /><Number>903</Number><ProgrammingLanguage>SCL</ProgrammingLanguage><SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text>MCP 交付包：SCL 语法探针（IF/CASE/FOR/WHILE/REPEAT/转换等）</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList><NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+<Access Scope="LocalVariable" UId="21"><Symbol UId="22"><Component Name="OutBool" UId="23" /></Symbol></Access>
+<Blank UId="24" />
+<Token Text=":=" UId="25" />
+<Blank UId="26" />
+<Access Scope="LocalVariable" UId="27"><Symbol UId="28"><Component Name="Enable" UId="29" /></Symbol></Access>
+<Blank UId="30" />
+<Token Text="AND" UId="31" />
+<Blank UId="32" />
+<Token Text="(" UId="33" />
+<Access Scope="LocalVariable" UId="34"><Symbol UId="35"><Component Name="InInt" UId="36" /></Symbol></Access>
+<Blank UId="37" />
+<Token Text="&gt;=" UId="38" />
+<Blank UId="39" />
+<Access Scope="LiteralConstant" UId="40"><Constant UId="41"><ConstantValue UId="42">0</ConstantValue></Constant></Access>
+<Token Text=")" UId="43" />
+<Blank UId="44" />
+<Token Text="OR" UId="45" />
+<Blank UId="46" />
+<Token Text="(" UId="47" />
+<Access Scope="LocalVariable" UId="48"><Symbol UId="49"><Component Name="Mode" UId="50" /></Symbol></Access>
+<Blank UId="51" />
+<Token Text="=" UId="52" />
+<Blank UId="53" />
+<Access Scope="LiteralConstant" UId="54"><Constant UId="55"><ConstantValue UId="56">2</ConstantValue></Constant></Access>
+<Token Text=")" UId="57" />
+<Token Text=";" UId="58" />
+<NewLine UId="59" />
+<Access Scope="LocalVariable" UId="60"><Symbol UId="61"><Component Name="OutInt" UId="62" /></Symbol></Access>
+<Blank UId="63" />
+<Token Text=":=" UId="64" />
+<Blank UId="65" />
+<Access Scope="LocalVariable" UId="66"><Symbol UId="67"><Component Name="InInt" UId="68" /></Symbol></Access>
+<Blank UId="69" />
+<Token Text="+" UId="70" />
+<Blank UId="71" />
+<Access Scope="LiteralConstant" UId="72"><Constant UId="73"><ConstantValue UId="74">1</ConstantValue></Constant></Access>
+<Token Text=";" UId="75" />
+<NewLine UId="76" />
+<Access Scope="LocalVariable" UId="77"><Symbol UId="78"><Component Name="OutDInt" UId="79" /></Symbol></Access>
+<Blank UId="80" />
+<Token Text=":=" UId="81" />
+<Blank UId="82" />
+<Access Scope="LiteralConstant" UId="83"><Constant UId="84"><ConstantValue UId="85">0</ConstantValue></Constant></Access>
+<Token Text=";" UId="86" />
+<NewLine UId="87" />
+<Access Scope="LocalVariable" UId="88"><Symbol UId="89"><Component Name="OutReal" UId="90" /></Symbol></Access>
+<Blank UId="91" />
+<Token Text=":=" UId="92" />
+<Blank UId="93" />
+<Access Scope="LocalVariable" UId="94"><Symbol UId="95"><Component Name="InReal" UId="96" /></Symbol></Access>
+<Token Text=";" UId="97" />
+<NewLine UId="98" />
+<Access Scope="LocalVariable" UId="99"><Symbol UId="100"><Component Name="OutWord" UId="101" /></Symbol></Access>
+<Blank UId="102" />
+<Token Text=":=" UId="103" />
+<Blank UId="104" />
+<Access Scope="LiteralConstant" UId="105"><Constant UId="106"><ConstantValue UId="107">16#0000</ConstantValue></Constant></Access>
+<Token Text=";" UId="108" />
+<NewLine UId="109" />
+<Token Text="IF" UId="175" />
+<Blank UId="176" />
+<Token Text="NOT" UId="177" />
+<Blank UId="178" />
+<Access Scope="LocalVariable" UId="179"><Symbol UId="180"><Component Name="Enable" UId="181" /></Symbol></Access>
+<Blank UId="182" />
+<Token Text="THEN" UId="183" />
+<NewLine UId="184" />
+<Blank Num="2" UId="185" />
+<Access Scope="LocalVariable" UId="186"><Symbol UId="187"><Component Name="OutInt" UId="188" /></Symbol></Access>
+<Blank UId="189" />
+<Token Text=":=" UId="190" />
+<Blank UId="191" />
+<Access Scope="LiteralConstant" UId="192"><Constant UId="193"><ConstantValue UId="194">0</ConstantValue></Constant></Access>
+<Token Text=";" UId="195" />
+<NewLine UId="196" />
+<Token Text="ELSIF" UId="197" />
+<Blank UId="198" />
+<Access Scope="LocalVariable" UId="199"><Symbol UId="200"><Component Name="Mode" UId="201" /></Symbol></Access>
+<Blank UId="202" />
+<Token Text="=" UId="203" />
+<Blank UId="204" />
+<Access Scope="LiteralConstant" UId="205"><Constant UId="206"><ConstantValue UId="207">1</ConstantValue></Constant></Access>
+<Blank UId="208" />
+<Token Text="THEN" UId="209" />
+<NewLine UId="210" />
+<Blank Num="2" UId="211" />
+<Access Scope="LocalVariable" UId="212"><Symbol UId="213"><Component Name="OutInt" UId="214" /></Symbol></Access>
+<Blank UId="215" />
+<Token Text=":=" UId="216" />
+<Blank UId="217" />
+<Access Scope="LocalVariable" UId="218"><Symbol UId="219"><Component Name="OutInt" UId="220" /></Symbol></Access>
+<Blank UId="221" />
+<Token Text="+" UId="222" />
+<Blank UId="223" />
+<Access Scope="LiteralConstant" UId="224"><Constant UId="225"><ConstantValue UId="226">10</ConstantValue></Constant></Access>
+<Token Text=";" UId="227" />
+<NewLine UId="228" />
+<Token Text="ELSE" UId="229" />
+<NewLine UId="230" />
+<Blank Num="2" UId="231" />
+<Access Scope="LocalVariable" UId="232"><Symbol UId="233"><Component Name="OutInt" UId="234" /></Symbol></Access>
+<Blank UId="235" />
+<Token Text=":=" UId="236" />
+<Blank UId="237" />
+<Access Scope="LocalVariable" UId="238"><Symbol UId="239"><Component Name="OutInt" UId="240" /></Symbol></Access>
+<Blank UId="241" />
+<Token Text="+" UId="242" />
+<Blank UId="243" />
+<Access Scope="LiteralConstant" UId="244"><Constant UId="245"><ConstantValue UId="246">20</ConstantValue></Constant></Access>
+<Token Text=";" UId="247" />
+<NewLine UId="248" />
+<Token Text="END_IF" UId="249" />
+<Token Text=";" UId="250" />
+<NewLine UId="251" />
+<Token Text="CASE" UId="252" />
+<Blank UId="253" />
+<Access Scope="LocalVariable" UId="254"><Symbol UId="255"><Component Name="Mode" UId="256" /></Symbol></Access>
+<Blank UId="257" />
+<Token Text="OF" UId="258" />
+<NewLine UId="259" />
+<Blank Num="2" UId="260" />
+<Access Scope="LiteralConstant" UId="261"><Constant UId="262"><ConstantValue UId="263">0</ConstantValue></Constant></Access>
+<Token Text=":" UId="264" />
+<Blank UId="265" />
+<Access Scope="LocalVariable" UId="266"><Symbol UId="267"><Component Name="OutInt" UId="268" /></Symbol></Access>
+<Blank UId="269" />
+<Token Text=":=" UId="270" />
+<Blank UId="271" />
+<Access Scope="LiteralConstant" UId="272"><Constant UId="273"><ConstantValue UId="274">0</ConstantValue></Constant></Access>
+<Token Text=";" UId="275" />
+<NewLine UId="276" />
+<Blank Num="2" UId="277" />
+<Access Scope="LiteralConstant" UId="278"><Constant UId="279"><ConstantValue UId="280">1</ConstantValue></Constant></Access>
+<Token Text="," UId="281" />
+<Blank UId="282" />
+<Access Scope="LiteralConstant" UId="283"><Constant UId="284"><ConstantValue UId="285">2</ConstantValue></Constant></Access>
+<Token Text=":" UId="286" />
+<Blank UId="287" />
+<Access Scope="LocalVariable" UId="288"><Symbol UId="289"><Component Name="OutInt" UId="290" /></Symbol></Access>
+<Blank UId="291" />
+<Token Text=":=" UId="292" />
+<Blank UId="293" />
+<Access Scope="LocalVariable" UId="294"><Symbol UId="295"><Component Name="OutInt" UId="296" /></Symbol></Access>
+<Blank UId="297" />
+<Token Text="+" UId="298" />
+<Blank UId="299" />
+<Access Scope="LiteralConstant" UId="300"><Constant UId="301"><ConstantValue UId="302">1</ConstantValue></Constant></Access>
+<Token Text=";" UId="303" />
+<NewLine UId="304" />
+<Blank Num="2" UId="305" />
+<Access Scope="LiteralConstant" UId="306"><Constant UId="307"><ConstantValue UId="308">3</ConstantValue></Constant></Access>
+<Token Text=".." UId="309" />
+<Access Scope="LiteralConstant" UId="310"><Constant UId="311"><ConstantValue UId="312">5</ConstantValue></Constant></Access>
+<Token Text=":" UId="313" />
+<Blank UId="314" />
+<Access Scope="LocalVariable" UId="315"><Symbol UId="316"><Component Name="OutInt" UId="317" /></Symbol></Access>
+<Blank UId="318" />
+<Token Text=":=" UId="319" />
+<Blank UId="320" />
+<Access Scope="LocalVariable" UId="321"><Symbol UId="322"><Component Name="OutInt" UId="323" /></Symbol></Access>
+<Blank UId="324" />
+<Token Text="+" UId="325" />
+<Blank UId="326" />
+<Access Scope="LiteralConstant" UId="327"><Constant UId="328"><ConstantValue UId="329">3</ConstantValue></Constant></Access>
+<Token Text=";" UId="330" />
+<NewLine UId="331" />
+<Token Text="ELSE" UId="332" />
+<NewLine UId="333" />
+<Blank Num="2" UId="334" />
+<Access Scope="LocalVariable" UId="335"><Symbol UId="336"><Component Name="OutInt" UId="337" /></Symbol></Access>
+<Blank UId="338" />
+<Token Text=":=" UId="339" />
+<Blank UId="340" />
+<Access Scope="LiteralConstant" UId="341"><Constant UId="342"><ConstantValue UId="343">-1</ConstantValue></Constant></Access>
+<Token Text=";" UId="344" />
+<NewLine UId="345" />
+<Token Text="END_CASE" UId="346" />
+<Token Text=";" UId="347" />
+<NewLine UId="348" />
+<Access Scope="LocalVariable" UId="349"><Symbol UId="350"><Component Name="acc" UId="351" /></Symbol></Access>
+<Blank UId="352" />
+<Token Text=":=" UId="353" />
+<Blank UId="354" />
+<Access Scope="LiteralConstant" UId="355"><Constant UId="356"><ConstantValue UId="357">0</ConstantValue></Constant></Access>
+<Token Text=";" UId="358" />
+<NewLine UId="359" />
+<Token Text="FOR" UId="360" />
+<Blank UId="361" />
+<Access Scope="LocalVariable" UId="362"><Symbol UId="363"><Component Name="i" UId="364" /></Symbol></Access>
+<Blank UId="365" />
+<Token Text=":=" UId="366" />
+<Blank UId="367" />
+<Access Scope="LiteralConstant" UId="368"><Constant UId="369"><ConstantValue UId="370">0</ConstantValue></Constant></Access>
+<Blank UId="371" />
+<Token Text="TO" UId="372" />
+<Blank UId="373" />
+<Access Scope="LiteralConstant" UId="374"><Constant UId="375"><ConstantValue UId="376">9</ConstantValue></Constant></Access>
+<Blank UId="377" />
+<Token Text="DO" UId="378" />
+<NewLine UId="379" />
+<Blank Num="2" UId="380" />
+<Access Scope="LocalVariable" UId="381"><Symbol UId="382"><Component Name="acc" UId="383" /></Symbol></Access>
+<Blank UId="384" />
+<Token Text=":=" UId="385" />
+<Blank UId="386" />
+<Access Scope="LocalVariable" UId="387"><Symbol UId="388"><Component Name="acc" UId="389" /></Symbol></Access>
+<Blank UId="390" />
+<Token Text="+" UId="391" />
+<Blank UId="392" />
+<Access Scope="LocalVariable" UId="393"><Symbol UId="394"><Component Name="i" UId="395" /></Symbol></Access>
+<Token Text=";" UId="396" />
+<NewLine UId="397" />
+<Token Text="END_FOR" UId="398" />
+<Token Text=";" UId="399" />
+<NewLine UId="400" />
+<Access Scope="LocalVariable" UId="401"><Symbol UId="402"><Component Name="i" UId="403" /></Symbol></Access>
+<Blank UId="404" />
+<Token Text=":=" UId="405" />
+<Blank UId="406" />
+<Access Scope="LiteralConstant" UId="407"><Constant UId="408"><ConstantValue UId="409">0</ConstantValue></Constant></Access>
+<Token Text=";" UId="410" />
+<NewLine UId="411" />
+<Token Text="WHILE" UId="412" />
+<Blank UId="413" />
+<Access Scope="LocalVariable" UId="414"><Symbol UId="415"><Component Name="i" UId="416" /></Symbol></Access>
+<Blank UId="417" />
+<Token Text="&lt;" UId="418" />
+<Blank UId="419" />
+<Access Scope="LiteralConstant" UId="420"><Constant UId="421"><ConstantValue UId="422">3</ConstantValue></Constant></Access>
+<Blank UId="423" />
+<Token Text="DO" UId="424" />
+<NewLine UId="425" />
+<Blank Num="2" UId="426" />
+<Access Scope="LocalVariable" UId="427"><Symbol UId="428"><Component Name="acc" UId="429" /></Symbol></Access>
+<Blank UId="430" />
+<Token Text=":=" UId="431" />
+<Blank UId="432" />
+<Access Scope="LocalVariable" UId="433"><Symbol UId="434"><Component Name="acc" UId="435" /></Symbol></Access>
+<Blank UId="436" />
+<Token Text="+" UId="437" />
+<Blank UId="438" />
+<Access Scope="LocalVariable" UId="439"><Symbol UId="440"><Component Name="i" UId="441" /></Symbol></Access>
+<Token Text=";" UId="442" />
+<NewLine UId="443" />
+<Blank Num="2" UId="444" />
+<Access Scope="LocalVariable" UId="445"><Symbol UId="446"><Component Name="i" UId="447" /></Symbol></Access>
+<Blank UId="448" />
+<Token Text=":=" UId="449" />
+<Blank UId="450" />
+<Access Scope="LocalVariable" UId="451"><Symbol UId="452"><Component Name="i" UId="453" /></Symbol></Access>
+<Blank UId="454" />
+<Token Text="+" UId="455" />
+<Blank UId="456" />
+<Access Scope="LiteralConstant" UId="457"><Constant UId="458"><ConstantValue UId="459">1</ConstantValue></Constant></Access>
+<Token Text=";" UId="460" />
+<NewLine UId="461" />
+<Token Text="END_WHILE" UId="462" />
+<Token Text=";" UId="463" />
+<NewLine UId="464" />
+<Token Text="REPEAT" UId="465" />
+<NewLine UId="466" />
+<Blank Num="2" UId="467" />
+<Access Scope="LocalVariable" UId="468"><Symbol UId="469"><Component Name="acc" UId="470" /></Symbol></Access>
+<Blank UId="471" />
+<Token Text=":=" UId="472" />
+<Blank UId="473" />
+<Access Scope="LocalVariable" UId="474"><Symbol UId="475"><Component Name="acc" UId="476" /></Symbol></Access>
+<Blank UId="477" />
+<Token Text="-" UId="478" />
+<Blank UId="479" />
+<Access Scope="LiteralConstant" UId="480"><Constant UId="481"><ConstantValue UId="482">1</ConstantValue></Constant></Access>
+<Token Text=";" UId="483" />
+<NewLine UId="484" />
+<Token Text="UNTIL" UId="485" />
+<Blank UId="486" />
+<Access Scope="LocalVariable" UId="487"><Symbol UId="488"><Component Name="acc" UId="489" /></Symbol></Access>
+<Blank UId="490" />
+<Token Text="&lt;=" UId="491" />
+<Blank UId="492" />
+<Access Scope="LiteralConstant" UId="493"><Constant UId="494"><ConstantValue UId="495">0</ConstantValue></Constant></Access>
+<NewLine UId="496" />
+<Token Text="END_REPEAT" UId="497" />
+<Token Text=";" UId="498" />
+<NewLine UId="499" />
+
+        </StructuredText></NetworkSource><ProgrammingLanguage>SCL</ProgrammingLanguage></AttributeList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

@@ -1,0 +1,21 @@
+﻿MultiLingualTexts:
+  - id: MLC_jr
+    zh-CN: MCPVerify_FB_LAD_v3
+  - id: MLC_3pC
+    zh-CN: TON 实例在 FB.Static（TON_TIME）；PBox/Not/Lt — 安全 PLC 可用
+  - id: MLC_463
+    zh-CN: N1
+  - id: MLC_4zs
+    zh-CN: N1 TON Static
+  - id: MLC_3qd
+    zh-CN: N2
+  - id: MLC_4iu
+    zh-CN: N2 PBox
+  - id: MLC_4Ze
+    zh-CN: N3
+  - id: MLC_4YN
+    zh-CN: N3 Not
+  - id: MLC_QS
+    zh-CN: N4
+  - id: MLC_49z
+    zh-CN: N4 Lt

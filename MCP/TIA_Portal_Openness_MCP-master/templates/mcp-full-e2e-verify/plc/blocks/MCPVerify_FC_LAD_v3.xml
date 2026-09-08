@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V21" />
+  <DocumentInfo>
+    <Created>2026-05-11T00:00:00.0000000Z</Created>
+    <ExportSetting>None</ExportSetting>
+    <InstalledProducts>
+      <Product>
+        <DisplayName>Totally Integrated Automation Portal</DisplayName>
+        <DisplayVersion>V21</DisplayVersion>
+      </Product>
+      <Product>
+        <DisplayName>STEP 7 Professional</DisplayName>
+        <DisplayVersion>V21</DisplayVersion>
+      </Product>
+    </InstalledProducts>
+  </DocumentInfo>
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <AutoNumber>false</AutoNumber>
+      <Interface>
+        <Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+          <Section Name="Input">
+            <Member Name="CmpA" Datatype="Int" />
+            <Member Name="CmpB" Datatype="Int" />
+          </Section>
+          <Section Name="Output">
+            <Member Name="OutLt" Datatype="Bool" />
+          </Section>
+          <Section Name="InOut" />
+          <Section Name="Temp" />
+          <Section Name="Constant" />
+          <Section Name="Return">
+            <Member Name="Ret_Val" Datatype="Void" />
+          </Section>
+        </Sections>
+      </Interface>
+      <MemoryLayout>Optimized</MemoryLayout>
+      <Name>MCPVerify_FC_LAD_v3</Name>
+      <Namespace />
+      <Number>59990</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text>MCP v3: Lt only — import+compile check on 安全PLC (see SKILL LAD v3)</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+              <Parts>
+                <Access Scope="LocalVariable" UId="21"><Symbol><Component Name="CmpA" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="22"><Symbol><Component Name="CmpB" /></Symbol></Access>
+                <Access Scope="LocalVariable" UId="23"><Symbol><Component Name="OutLt" /></Symbol></Access>
+                <Part Name="Lt" UId="24"><TemplateValue Name="SrcType" Type="Type">Int</TemplateValue></Part>
+                <Part Name="Coil" UId="25" />
+              </Parts>
+              <Wires>
+                <Wire UId="26"><Powerrail /><NameCon UId="24" Name="pre" /></Wire>
+                <Wire UId="27"><IdentCon UId="21" /><NameCon UId="24" Name="in1" /></Wire>
+                <Wire UId="28"><IdentCon UId="22" /><NameCon UId="24" Name="in2" /></Wire>
+                <Wire UId="29"><NameCon UId="24" Name="out" /><NameCon UId="25" Name="in" /></Wire>
+                <Wire UId="30"><IdentCon UId="23" /><NameCon UId="25" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="4" CompositionName="Comment"><ObjectList><MultilingualTextItem ID="5" CompositionName="Items"><AttributeList><Culture>zh-CN</Culture><Text>Lt CmpA and CmpB</Text></AttributeList></MultilingualTextItem></ObjectList></MultilingualText>
+          <MultilingualText ID="6" CompositionName="Title"><ObjectList><MultilingualTextItem ID="7" CompositionName="Items"><AttributeList><Culture>zh-CN</Culture><Text>N1-Lt</Text></AttributeList></MultilingualTextItem></ObjectList></MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+
+      <MultilingualText ID="17" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="18" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text>MCP LAD v3 (Lt on 安全PLC)</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

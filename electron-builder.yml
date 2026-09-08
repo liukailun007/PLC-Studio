@@ -145,7 +145,7 @@ rpm:
   fpm: ["--rpm-rpmbuild-define=_build_id_links none"]
 publish:
   provider: generic
-  url: https://releases.cherry-ai.com
+  url: http://www.zhikonglianmeng.com/plcstudio
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 beforePack: scripts/before-pack.js
