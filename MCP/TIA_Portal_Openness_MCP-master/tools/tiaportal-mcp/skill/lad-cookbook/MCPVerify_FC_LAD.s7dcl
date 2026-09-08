@@ -1,0 +1,123 @@
+﻿{
+    S7_BlockComment := "MLC_548";
+    S7_BlockNumber := "901";
+    S7_BlockTitle := "MLC_4Vm";
+    S7_Optimized := "TRUE";
+    S7_PreferredLanguage := "LAD";
+    S7_Version := "0.1"
+}
+FUNCTION "MCPVerify_FC_LAD" : Void
+    VAR_INPUT
+        "A" : Bool;
+        "B" : Bool;
+        SET : Bool;
+        RESET : Bool;
+        V1 : Int;
+        V2 : Int;
+        VAL : Int;
+    END_VAR
+    VAR_OUTPUT
+        OUT_AND : Bool;
+        OUT_OR : Bool;
+        OUT_SR : Bool;
+        OUT_GT : Bool;
+        DST : Int;
+        SUM : Int;
+    END_VAR
+
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4X9";
+        S7_NetworkTitle := "MLC_3fA"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #"A" )
+            Contact( #"B" )
+            Coil( #OUT_AND )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4KE";
+        S7_NetworkTitle := "MLC_3xC"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #"A" )
+            wire#w1
+            Coil( #OUT_OR )
+        END_RUNG
+        RUNG wire#powerrail
+            Contact( #"B" )
+        END_RUNG wire#w1
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4aP";
+        S7_NetworkTitle := "MLC_mi"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #SET )
+            S_Coil( #OUT_SR )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_3mb";
+        S7_NetworkTitle := "MLC_xY"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #RESET )
+            R_Coil( #OUT_SR )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_36K";
+        S7_NetworkTitle := "MLC_4RN"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            { S7_Templates := "SrcType := Int" }
+            GT_Contact(
+                in1 := #VAL,
+                in2 := 100
+            )
+            Coil( #OUT_GT )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4W9";
+        S7_NetworkTitle := "MLC_ki"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            
+            Move(
+                in := 42,
+                out1 => #DST
+            )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_fp";
+        S7_NetworkTitle := "MLC_4yP"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            {
+                S7_Templates := "SrcType := Int"
+            }
+            Add(
+                in1 := #V1,
+                in2 := #V2,
+                out => #SUM
+            )
+        END_RUNG
+    END_NETWORK
+END_FUNCTION

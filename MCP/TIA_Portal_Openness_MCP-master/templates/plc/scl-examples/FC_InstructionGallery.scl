@@ -1,0 +1,62 @@
+FUNCTION "FC_InstructionGallery" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT
+      Enable : Bool;
+      Mode : Int;
+      InInt : Int;
+      InDInt : DInt;
+      InReal : Real;
+      MinValue : Real;
+      MaxValue : Real;
+   END_VAR
+
+   VAR_OUTPUT
+      OutBool : Bool;
+      OutInt : Int;
+      OutDInt : DInt;
+      OutReal : Real;
+      InRange : Bool;
+   END_VAR
+
+   VAR_TEMP
+      Index : Int;
+      SumValue : DInt;
+      RealFromDInt : Real;
+   END_VAR
+
+BEGIN
+   OutBool := Enable AND (Mode >= 0);
+   OutInt := InInt;
+   OutDInt := InDInt;
+   RealFromDInt := DINT_TO_REAL(InDInt);
+
+   IF NOT Enable THEN
+      OutReal := 0.0;
+   ELSIF Mode = 1 THEN
+      OutReal := LIMIT(MN := MinValue, IN := InReal, MX := MaxValue);
+   ELSIF Mode = 2 THEN
+      OutReal := ABS(InReal);
+   ELSE
+      OutReal := RealFromDInt;
+   END_IF;
+
+   CASE Mode OF
+      0:
+         OutInt := 0;
+      1:
+         OutInt := InInt + 1;
+      2:
+         OutInt := InInt - 1;
+   ELSE
+      OutInt := InInt;
+   END_CASE;
+
+   SumValue := 0;
+   FOR Index := 0 TO 7 DO
+      SumValue := SumValue + INT_TO_DINT(Index);
+   END_FOR;
+
+   OutDInt := SumValue;
+   InRange := (OutReal >= MinValue) AND (OutReal <= MaxValue);
+END_FUNCTION

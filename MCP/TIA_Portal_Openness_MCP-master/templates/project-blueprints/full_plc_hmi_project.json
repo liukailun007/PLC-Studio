@@ -1,0 +1,261 @@
+{
+  "schemaVersion": "2026-05-12",
+  "name": "complete_plc_hmi_project",
+  "title": "PLC + WinCC Unified complete project blueprint",
+  "intent": "Generate a complete general-purpose TIA Portal project with hardware, PLC tags, UDTs, DBs, SCL FC/FB blocks, LAD call recipes, Unified HMI pages, HMI tags, PLC-HMI connection, button actions and dynamization bindings.",
+  "targetTiaMajorVersion": 21,
+  "requiredBundleFiles": [
+    "README.md",
+    "scripts/Validate-Bundle.ps1",
+    "docs/full-project-generation-runbook.md",
+    "tools/tiaportal-mcp/skill/SKILL.md",
+    "manifest/tools-list.json",
+    "docs/tool-capability-matrix.md",
+    "docs/basic-plc-template-library.md",
+    "docs/HMI_Unified_画面生成规范与模板.md",
+    "docs/mcp-ide-and-tool-visibility.md",
+    "docs/hmi-plc-tag-binding-and-addressing.md",
+    "docs/hmi-connection-driver-matrix.md",
+    "docs/scl-instruction-library.md",
+    "docs/lad-instruction-library.md",
+    "docs/optional-reference-materials.md",
+    "docs/plc-network-patterns-expanded.md",
+    "templates/plc/README.md",
+    "templates/plc/block-xml/DB_HMI_Interface.xml",
+    "templates/plc/instruction-recipes/basic_plc_instruction_recipes.json",
+    "templates/plc/plcbuild-json/tagtable_basic_signals.json",
+    "templates/plc/plcbuild-json/udt_basic_status.json",
+    "templates/plc/plcbuild-json/db_basic_status.json",
+    "templates/plc/plcbuild-json/db_hmi_interface.json",
+    "templates/plc/lad-recipes/lad_call_recipes.json",
+    "templates/plc/scl-examples/FC_InstructionGallery.scl",
+    "templates/plc/scl-examples/FC_BasicScaleLimit.scl",
+    "templates/plc/scl-examples/FC_MathCompareDemo.scl",
+    "templates/plc/scl-examples/FB_BasicLatch.scl",
+    "templates/plc/scl-examples/FB_TimerCounterDemo.scl",
+    "templates/plc/scl-examples/FB_StepSequenceDemo.scl",
+    "templates/hmi/README.md",
+    "templates/hmi/unified_overview_1280x800.json",
+    "templates/hmi/unified_basic_dashboard_1024x768.json",
+    "templates/hmi/unified_control_strip_1024x768.json",
+    "templates/hmi/unified_parameter_page_1024x768.json",
+    "templates/hmi/unified_trend_page_1024x768.json",
+    "templates/hmi/unified_basic_tag_diagnostics_1024x768.json",
+    "templates/hmi/unified_basic_event_log_1024x768.json",
+    "templates/hmi/hmi_tag_binding_snippets.json"
+  ],
+  "environment": {
+    "tiaPortalLocationExample": "D:\\app\\TIA21\\Portal V21",
+    "publicApiPathExample": "D:\\app\\TIA21\\Portal V21\\PublicAPI",
+    "mustHaveWindowsGroup": "Siemens TIA Openness",
+    "mcpServerRelativePath": "tools/tiaportal-mcp/src/TiaMcpServer/bin/Release/net48/TiaMcpServer.exe",
+    "firstMcpTool": "Bootstrap"
+  },
+  "hardwareProfile": {
+    "preferredPlc": {
+      "family": "S7-1200",
+      "mlfb": "6ES7211-1BE40-0XB0",
+      "version": "V4.7",
+      "tool": "AddDeviceWithFallback"
+    },
+    "preferredUnifiedHmi": {
+      "family": "Unified",
+      "keywords": ["Unified Comfort", "HMI_RT"],
+      "tool": "AddHardwareCatalogDeviceWithProbe"
+    },
+    "network": {
+      "subnetName": "PN/IE_1",
+      "tool": "ConnectDeviceNodesToProfinetSubnet",
+      "readbackRequired": true
+    }
+  },
+  "plcProgram": {
+    "softwarePathSource": "GetProjectTree",
+    "importOrder": [
+      "tagtable",
+      "udt",
+      "globaldb",
+      "externalSclExample",
+      "ladRecipe",
+      "compile"
+    ],
+    "templateFiles": [
+      "templates/plc/plcbuild-json/tagtable_basic_signals.json",
+      "templates/plc/plcbuild-json/udt_basic_status.json",
+      "templates/plc/plcbuild-json/db_basic_status.json",
+      "templates/plc/plcbuild-json/db_hmi_interface.json"
+    ],
+    "objects": [
+      { "kind": "tagtable", "source": "templates/plc/plcbuild-json/tagtable_basic_signals.json", "name": "Basic_Signals" },
+      { "kind": "udt", "source": "templates/plc/plcbuild-json/udt_basic_status.json", "name": "UDT_BasicStatus" },
+      { "kind": "globaldb", "source": "templates/plc/plcbuild-json/db_basic_status.json", "name": "DB_BasicStatus" },
+      { "kind": "globaldb", "source": "templates/plc/plcbuild-json/db_hmi_interface.json", "name": "DB_HMI_Interface" }
+    ],
+    "externalSclBlockNote": "FC_BasicScaleLimit / FC_MathCompareDemo / FB_BasicLatch / FB_TimerCounterDemo / FB_StepSequenceDemo 含算术/比较表达式、TON 与 CASE，超出 PlcBuildAndImport 单变量 DSL 能力，统一改走 externalSclExamples 原生 SCL（ImportPlcExternalSource + GenerateBlocksFromExternalSource）。旧 plcbuild-json/*.json 已弃用，勿再用其表达式写法。",
+    "ladRecipes": [
+      {
+        "source": "templates/plc/lad-recipes/lad_call_recipes.json",
+        "tool": "BuildFlgNetCallXml",
+        "usage": "Generate call networks for FC/FB call organization. Import only after checking the generated XML shape."
+      }
+    ],
+    "externalSclExamples": [
+      {
+        "source": "templates/plc/scl-examples/FC_InstructionGallery.scl",
+        "usage": "SCL instruction reference. Prefer importing through a verified external-source path or use the equivalent PlcBuildAndImport templates."
+      },
+      {
+        "source": "templates/plc/scl-examples/FC_BasicScaleLimit.scl",
+        "name": "FC_BasicScaleLimit",
+        "usage": "线性缩放+限幅。ImportPlcExternalSource → GenerateBlocksFromExternalSource → CompileAndDiagnosePlc。"
+      },
+      {
+        "source": "templates/plc/scl-examples/FC_MathCompareDemo.scl",
+        "name": "FC_MathCompareDemo",
+        "usage": "数学/比较/限幅/质量位。走外部 SCL 导入，不走 DSL。"
+      },
+      {
+        "source": "templates/plc/scl-examples/FB_BasicLatch.scl",
+        "name": "FB_BasicLatch",
+        "usage": "启用/停止/故障/复位保持。布尔表达式条件，走外部 SCL。"
+      },
+      {
+        "source": "templates/plc/scl-examples/FB_TimerCounterDemo.scl",
+        "name": "FB_TimerCounterDemo",
+        "usage": "TON 定时器 + 计数器。多实例 TON 静态变量，走外部 SCL。"
+      },
+      {
+        "source": "templates/plc/scl-examples/FB_StepSequenceDemo.scl",
+        "name": "FB_StepSequenceDemo",
+        "usage": "CASE 步序状态机。DSL 无法表达 CASE，必须走外部 SCL。"
+      }
+    ],
+    "compileTool": "CompileAndDiagnosePlc"
+  },
+  "hmiProgram": {
+    "programType": "WinCC Unified",
+    "hmiSoftwarePathSource": "GetProjectTree",
+    "bindingMode": "absolute-address",
+    "bindingPolicy": "All HMI external tags use absolute addresses against DB_HMI_Interface (MemoryLayout=Standard). Symbolic binding is only acceptable when TIA confirms green resolution; default and recommended path is the address column below.",
+    "connection": {
+      "tool": "EnsureUnifiedHmiConnection",
+      "connectionName": "HMI_Connection_1",
+      "plcNameSource": "GetProjectTree",
+      "driverSelection": "Pick CommunicationDriver to match CPU family: S7-1200 / S7-1500 / S7-300/400. See docs/hmi-connection-driver-matrix.md."
+    },
+    "tagTable": {
+      "tool": "EnsureUnifiedHmiTagTable",
+      "tagTableName": "Project_HMI_Tags"
+    },
+    "tags": [
+      { "tagName": "HMI_CmdEnable",     "hmiDataType": "Bool", "address": "%DB200.DBX0.0",  "plcTag": "DB_HMI_Interface.CmdEnable" },
+      { "tagName": "HMI_CmdDisable",    "hmiDataType": "Bool", "address": "%DB200.DBX0.1",  "plcTag": "DB_HMI_Interface.CmdDisable" },
+      { "tagName": "HMI_CmdReset",      "hmiDataType": "Bool", "address": "%DB200.DBX0.2",  "plcTag": "DB_HMI_Interface.CmdReset" },
+      { "tagName": "HMI_CmdApply",      "hmiDataType": "Bool", "address": "%DB200.DBX0.3",  "plcTag": "DB_HMI_Interface.CmdApply" },
+      { "tagName": "HMI_StatusActive",  "hmiDataType": "Bool", "address": "%DB200.DBX1.0",  "plcTag": "DB_HMI_Interface.StatusActive" },
+      { "tagName": "HMI_StatusError",   "hmiDataType": "Bool", "address": "%DB200.DBX1.1",  "plcTag": "DB_HMI_Interface.StatusError" },
+      { "tagName": "HMI_StatusWarning", "hmiDataType": "Bool", "address": "%DB200.DBX1.2",  "plcTag": "DB_HMI_Interface.StatusWarning" },
+      { "tagName": "HMI_StepNo",        "hmiDataType": "Int",  "address": "%DB200.DBW2",    "plcTag": "DB_HMI_Interface.StepNo" },
+      { "tagName": "HMI_ValueSetpoint", "hmiDataType": "Real", "address": "%DB200.DBD4",    "plcTag": "DB_HMI_Interface.Setpoint" },
+      { "tagName": "HMI_ValueActual",   "hmiDataType": "Real", "address": "%DB200.DBD8",    "plcTag": "DB_HMI_Interface.Actual" },
+      { "tagName": "HMI_ValueOutput",   "hmiDataType": "Real", "address": "%DB200.DBD12",   "plcTag": "DB_HMI_Interface.Output" },
+      { "tagName": "HMI_OutputMin",     "hmiDataType": "Real", "address": "%DB200.DBD16",   "plcTag": "DB_HMI_Interface.OutputMin" },
+      { "tagName": "HMI_OutputMax",     "hmiDataType": "Real", "address": "%DB200.DBD20",   "plcTag": "DB_HMI_Interface.OutputMax" },
+      { "tagName": "HMI_CounterPreset", "hmiDataType": "DInt", "address": "%DB200.DBD24",   "plcTag": "DB_HMI_Interface.CounterPreset" },
+      { "tagName": "HMI_CounterValue",  "hmiDataType": "DInt", "address": "%DB200.DBD28",   "plcTag": "DB_HMI_Interface.CounterValue" }
+    ],
+    "screens": [
+      { "screenName": "Overview", "width": 1280, "height": 800, "template": "templates/hmi/unified_overview_1280x800.json" },
+      { "screenName": "Dashboard", "width": 1024, "height": 768, "template": "templates/hmi/unified_basic_dashboard_1024x768.json" },
+      { "screenName": "ControlStrip", "width": 1024, "height": 768, "template": "templates/hmi/unified_control_strip_1024x768.json" },
+      { "screenName": "Parameters", "width": 1024, "height": 768, "template": "templates/hmi/unified_parameter_page_1024x768.json" },
+      { "screenName": "Trend", "width": 1024, "height": 768, "template": "templates/hmi/unified_trend_page_1024x768.json" },
+      { "screenName": "TagDiagnostics", "width": 1024, "height": 768, "template": "templates/hmi/unified_basic_tag_diagnostics_1024x768.json" },
+      { "screenName": "Events", "width": 1024, "height": 768, "template": "templates/hmi/unified_basic_event_log_1024x768.json" }
+    ],
+    "buttonActions": [
+      { "screenName": "Overview", "buttonName": "Btn_Enable", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "Overview", "buttonName": "Btn_Enable", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "Overview", "buttonName": "Btn_Disable", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "Overview", "buttonName": "Btn_Disable", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "Overview", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Overview", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Enable", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Enable", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Disable", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Disable", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Dashboard", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "ControlStrip", "buttonName": "Btn_Start", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "ControlStrip", "buttonName": "Btn_Start", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdEnable" },
+      { "screenName": "ControlStrip", "buttonName": "Btn_Stop", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "ControlStrip", "buttonName": "Btn_Stop", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdDisable" },
+      { "screenName": "Parameters", "buttonName": "Btn_Apply", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdApply" },
+      { "screenName": "Parameters", "buttonName": "Btn_Apply", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdApply" },
+      { "screenName": "Parameters", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Parameters", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Trend", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Trend", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Events", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "Events", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "TagDiagnostics", "buttonName": "Btn_Reset", "eventType": "Down", "actionKind": "set-bit", "targetTag": "HMI_CmdReset" },
+      { "screenName": "TagDiagnostics", "buttonName": "Btn_Reset", "eventType": "Up", "actionKind": "reset-bit", "targetTag": "HMI_CmdReset" }
+    ],
+    "dynamizations": [
+      { "screenName": "Overview", "itemName": "Lamp_Active", "propertyName": "BackColor", "tagName": "HMI_StatusActive" },
+      { "screenName": "Overview", "itemName": "Lamp_Error", "propertyName": "BackColor", "tagName": "HMI_StatusError" },
+      { "screenName": "Overview", "itemName": "IO_Setpoint", "propertyName": "ProcessValue", "tagName": "HMI_ValueSetpoint" },
+      { "screenName": "Overview", "itemName": "IO_Actual", "propertyName": "ProcessValue", "tagName": "HMI_ValueActual" },
+      { "screenName": "Dashboard", "itemName": "IO_Output", "propertyName": "ProcessValue", "tagName": "HMI_ValueOutput" },
+      { "screenName": "ControlStrip", "itemName": "Lamp_Run", "propertyName": "BackColor", "tagName": "HMI_StatusActive" },
+      { "screenName": "ControlStrip", "itemName": "Lamp_Fault", "propertyName": "BackColor", "tagName": "HMI_StatusError" },
+      { "screenName": "Parameters", "itemName": "IO_OutputMin", "propertyName": "ProcessValue", "tagName": "HMI_OutputMin" },
+      { "screenName": "Parameters", "itemName": "IO_OutputMax", "propertyName": "ProcessValue", "tagName": "HMI_OutputMax" },
+      { "screenName": "Parameters", "itemName": "IO_CounterPreset", "propertyName": "ProcessValue", "tagName": "HMI_CounterPreset" },
+      { "screenName": "Trend", "itemName": "IO_Setpoint", "propertyName": "ProcessValue", "tagName": "HMI_ValueSetpoint" },
+      { "screenName": "Trend", "itemName": "IO_Actual", "propertyName": "ProcessValue", "tagName": "HMI_ValueActual" },
+      { "screenName": "Trend", "itemName": "IO_Output", "propertyName": "ProcessValue", "tagName": "HMI_ValueOutput" },
+      { "screenName": "TagDiagnostics", "itemName": "Lamp_Row1", "propertyName": "BackColor", "tagName": "HMI_StatusActive" },
+      { "screenName": "TagDiagnostics", "itemName": "Lamp_Row2", "propertyName": "BackColor", "tagName": "HMI_StatusError" },
+      { "screenName": "TagDiagnostics", "itemName": "IO_Row3", "propertyName": "ProcessValue", "tagName": "HMI_ValueActual" }
+    ]
+  },
+  "mcpWorkflow": [
+    "Bootstrap",
+    "Connect",
+    "CreateProject",
+    "AddDeviceWithFallback",
+    "AddHardwareCatalogDeviceWithProbe",
+    "ConnectDeviceNodesToProfinetSubnet",
+    "GetProjectTree",
+    "ValidateAutomationContext",
+    "PlcBuildAndImport(dryRun=true for every PLC object)",
+    "PlcBuildAndImport(dryRun=false in importOrder)",
+    "BuildFlgNetCallXml for LAD call recipes",
+    "CompileAndDiagnosePlc",
+    "GetHmiProgramInfo",
+    "EnsureUnifiedHmiConnection",
+    "EnsureUnifiedHmiTagTable",
+    "EnsureUnifiedHmiTag for every HMI tag",
+    "EnsureUnifiedHmiScreen for every screen",
+    "ApplyUnifiedHmiScreenDesignJson for every template",
+    "BindUnifiedHmiTagDynamization",
+    "EnsureUnifiedHmiButtonAction",
+    "SaveProject",
+    "Disconnect"
+  ],
+  "acceptance": {
+    "mustPass": [
+      "Bootstrap reports usable environment or a clear missing prerequisite.",
+      "GetProjectTree resolves PLC and Unified HMI software paths.",
+      "All required bundle files exist.",
+      "All PLC JSON templates parse and support dryRun.",
+      "PLC compile error count is 0 after imports.",
+      "All HMI designJson files parse.",
+      "All screens referenced by buttonActions and dynamizations exist.",
+      "Every button action references a button present on its screen.",
+      "Every dynamization references an item present on its screen.",
+      "SaveProject succeeds."
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "kind": "fb",
+  "tool": "PlcBuildAndImport",
+  "_deprecated": "已弃用：condition 含布尔表达式（Disable OR FaultLatch 等），超出 DSL 能力。改用 templates/plc/scl-examples/FB_BasicLatch.scl 外部 SCL 导入。",
+  "description": "通用启用/停止/故障/复位保持块，只表达基础布尔逻辑。",
+  "json": {
+    "blockName": "FB_BasicLatch",
+    "blockNumber": 110,
+    "inputs": [
+      { "name": "Enable", "datatype": "Bool" },
+      { "name": "Disable", "datatype": "Bool" },
+      { "name": "FaultInput", "datatype": "Bool" },
+      { "name": "Reset", "datatype": "Bool" }
+    ],
+    "outputs": [
+      { "name": "Active", "datatype": "Bool" },
+      { "name": "Fault", "datatype": "Bool" }
+    ],
+    "statics": [
+      { "name": "ActiveLatch", "datatype": "Bool" },
+      { "name": "FaultLatch", "datatype": "Bool" }
+    ],
+    "structuredText": {
+      "operations": [
+        { "op": "if", "condition": "FaultInput" },
+        { "op": "assignment", "target": "FaultLatch", "literalValue": "TRUE", "indent": 1 },
+        { "op": "assignment", "target": "ActiveLatch", "literalValue": "FALSE", "indent": 1 },
+        { "op": "elsif", "condition": "Reset" },
+        { "op": "assignment", "target": "FaultLatch", "literalValue": "FALSE", "indent": 1 },
+        { "op": "endif" },
+        { "op": "if", "condition": "Disable OR FaultLatch" },
+        { "op": "assignment", "target": "ActiveLatch", "literalValue": "FALSE", "indent": 1 },
+        { "op": "elsif", "condition": "Enable AND NOT FaultLatch" },
+        { "op": "assignment", "target": "ActiveLatch", "literalValue": "TRUE", "indent": 1 },
+        { "op": "endif" },
+        { "op": "assignment", "target": "Active", "source": "ActiveLatch" },
+        { "op": "assignment", "target": "Fault", "source": "FaultLatch" }
+      ]
+    }
+  }
+}
+

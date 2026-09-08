@@ -1,0 +1,31 @@
+{
+  "kind": "fc",
+  "tool": "PlcBuildAndImport",
+  "_deprecated": "已弃用：source 为 SCL 表达式/函数调用，超出 DSL 能力。改用 templates/plc/scl-examples/FC_MathCompareDemo.scl 外部 SCL 导入。",
+  "description": "通用数学、比较、限幅和质量位示例。",
+  "json": {
+    "blockName": "FC_MathCompareDemo",
+    "blockNumber": 150,
+    "inputs": [
+      { "name": "Setpoint", "datatype": "Real" },
+      { "name": "Actual", "datatype": "Real" },
+      { "name": "Deadband", "datatype": "Real" },
+      { "name": "OutMin", "datatype": "Real" },
+      { "name": "OutMax", "datatype": "Real" }
+    ],
+    "outputs": [
+      { "name": "ErrorValue", "datatype": "Real" },
+      { "name": "AbsError", "datatype": "Real" },
+      { "name": "OutputValue", "datatype": "Real" },
+      { "name": "InTolerance", "datatype": "Bool" }
+    ],
+    "structuredText": {
+      "operations": [
+        { "op": "assignment", "target": "ErrorValue", "source": "Setpoint - Actual" },
+        { "op": "assignment", "target": "AbsError", "source": "ABS(ErrorValue)" },
+        { "op": "assignment", "target": "OutputValue", "source": "LIMIT(MN := OutMin, IN := ErrorValue, MX := OutMax)" },
+        { "op": "assignment", "target": "InTolerance", "source": "AbsError <= Deadband" }
+      ]
+    }
+  }
+}

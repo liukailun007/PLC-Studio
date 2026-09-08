@@ -1,0 +1,139 @@
+﻿{
+  "schemaVersion": "2026-05-25",
+  "bundleVersion": "2.3.0",
+  "packageName": "TIA_MCP_Delivery_v2.3.0_20260704",
+  "packageType": "tia-portal-mcp-complete-offline-delivery-bundle",
+  "generatedAt": "2026-05-31T20:30:00+08:00",
+  "refreshedAt": "2026-07-04T12:30:00+08:00",
+  "target": {
+    "tiaPortalMajorVersion": [
+      20,
+      21
+    ],
+    "publicApiPathExample": "D:\\app\\TIA21\\Portal V21\\PublicAPI or D:\\app\\TIA20\\Portal V20\\PublicAPI",
+    "runtimeRequirement": ".NET Framework 4.8",
+    "windowsGroupRequirement": "Siemens TIA Openness",
+    "newCliFlags": [
+      "--tia-portal-location <path>",
+      "--tia-major-version {20|21}"
+    ]
+  },
+  "selfContainedScope": {
+    "description": "The bundle contains runtime, skill, manuals, templates and blueprints required for PLC + WinCC Unified project generation.",
+    "bundled": [
+      "TiaMcpServer runtime and dependent DLLs",
+      "Skill and MCP operation rules",
+      "Static MCP tool roster",
+      "Tool capability matrix",
+      "Complete PLC + HMI project blueprint",
+      "PLC instruction recipes, PlcBuildAndImport JSON templates, LAD recipes and SCL examples",
+      "WinCC Unified designJson screen templates",
+      "Project generation runbook and validation checklist"
+    ],
+    "notBundled": [
+      "Siemens TIA Portal installation",
+      "Siemens PublicAPI assemblies installed with TIA Portal",
+      "Project-specific exported source folders",
+      "Project-specific process logic, site names or business program segments"
+    ]
+  },
+  "entrypoints": {
+    "readme": "README.md",
+    "skill": "tools/tiaportal-mcp/skill/SKILL.md",
+    "mcpServerExe": "tools/tiaportal-mcp/src/TiaMcpServer/bin/Release/net48/TiaMcpServer.exe",
+    "cursorExample": "cursor-mcp.example.json",
+    "toolRoster": "manifest/tools-list.json",
+    "toolMatrix": "docs/tool-capability-matrix.md",
+    "fullProjectBlueprint": "templates/project-blueprints/full_plc_hmi_project.json",
+    "fullProjectRunbook": "docs/full-project-generation-runbook.md",
+    "hmiTemplateIndex": "templates/hmi/README.md",
+    "plcTemplateIndex": "templates/plc/README.md",
+    "plcTemplateLibrary": "docs/basic-plc-template-library.md",
+    "hmiTemplateGuide": "docs/HMI_Unified_画面生成规范与模板.md",
+    "plcNetworkPatterns": "docs/plc-network-patterns-expanded.md",
+    "hmiBindingGuide": "docs/hmi-plc-tag-binding-and-addressing.md",
+    "mcpIdeNeutral": "docs/mcp-ide-and-tool-visibility.md",
+    "optionalReferenceReadme": "docs/optional-reference-materials.md",
+    "bundleValidationScript": "scripts/Validate-Bundle.ps1"
+  },
+  "cli": {
+    "description": "Same exe also runs as a declarative CLI: `tia <verb>`. Any AI can emit a YAML/JSON spec; any engineer runs one command. No MCP client required.",
+    "exe": "tools/tiaportal-mcp/src/TiaMcpServer/bin/Release/net48/TiaMcpServer.exe",
+    "verbs": [
+      "gen",
+      "patch",
+      "compile",
+      "export",
+      "import",
+      "describe",
+      "prewarm",
+      "config",
+      "doctor",
+      "schema",
+      "version",
+      "help"
+    ],
+    "specFormats": [
+      "json",
+      "yaml"
+    ],
+    "exitCodes": {
+      "0": "success",
+      "1": "completed with failed steps",
+      "2": "error"
+    }
+  },
+  "capabilities": {
+    "mcpToolCount": 201,
+    "mcpToolLayers": {
+      "L0": 8,
+      "L1": 35,
+      "L2": 158
+    },
+    "newToolsThisRelease": [
+      "DescribeBlockLogic (v2.3.0)",
+      "Doctor (v2.2.8)"
+    ],
+    "removedToolsThisRelease": [],
+    "hmiTemplateJsonCount": 8,
+    "plcTemplateJsonCount": 9,
+    "projectBlueprintJsonCount": 1,
+    "supports": [
+      "project/session management",
+      "hardware catalog search and insertion",
+      "PROFINET subnet connection",
+      "PLC tag/type/block generation and import",
+      "SCL FC/FB examples",
+      "LAD call-network recipe generation",
+      "PLC compile diagnostics",
+      "WinCC Unified screen/tag/connection generation",
+      "Unified HMI screen designJson application",
+      "button Down/Up actions and tag dynamization",
+      "read-only online live-value monitoring over S7 (port 102) and OPC UA (port 4840): single read, trend sampling (PID step-response capture), watch-table live read, CPU RUN/STOP state, and offline+live tag causal trace",
+      "reflection-based API discovery for uncovered Openness shapes"
+    ],
+    "liteProfile": {
+      "env": "TIA_MCP_PROFILE=lite",
+      "toolCount": 42,
+      "scope": "L0+L1 essentials; one-click via `tia config --lite`"
+    }
+  },
+  "validationSnapshot": {
+    "performedAt": "2026-05-26T19:10:00+08:00",
+    "expectedCoreFilesPresent": true,
+    "blueprintRequiredBundleFilesPresent": true,
+    "runtimeExePresent": true,
+    "offlineValidationScript": "scripts/Validate-Bundle.ps1",
+    "jsonFilesParsed": 23,
+    "hmiBlueprintReferencesValid": true,
+    "hmiTagToDbMemberMappingValid": true,
+    "selfContainedDocumentationCheck": true,
+    "projectSpecificContentScan": true,
+    "notes": [
+      "All real PLC/HMI paths must be resolved from GetProjectTree at execution time.",
+      "WinCC Unified templates are designJson assets.",
+      "PLC templates are general-purpose instruction and structure examples.",
+      "Run scripts/Validate-Bundle.ps1 from bundle root for offline file/JSON checks; tools/list when server runs is authoritative for tool roster."
+    ]
+  }
+}

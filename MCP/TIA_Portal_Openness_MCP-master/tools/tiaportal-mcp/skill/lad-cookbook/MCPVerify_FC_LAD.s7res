@@ -1,0 +1,33 @@
+﻿MultiLingualTexts:
+  - id: MLC_4Vm
+    zh-CN: MCP LAD 原生指令验证
+  - id: MLC_548
+    zh-CN: MCP 验证：LAD 原生指令 6 网络（串联/并联/SR/比较/Move/Add）
+  - id: MLC_3fA
+    zh-CN: N1-串联
+  - id: MLC_4X9
+    zh-CN: 串联 AND：A & B -> OUT_AND
+  - id: MLC_3xC
+    zh-CN: N2-并联
+  - id: MLC_4KE
+    zh-CN: 并联 OR：A | B -> OUT_OR
+  - id: MLC_mi
+    zh-CN: N3-Set
+  - id: MLC_4aP
+    zh-CN: 置位：SET -> S OUT_SR
+  - id: MLC_xY
+    zh-CN: N4-Reset
+  - id: MLC_3mb
+    zh-CN: 复位：RESET -> R OUT_SR
+  - id: MLC_4RN
+    zh-CN: N5-比较
+  - id: MLC_36K
+    zh-CN: 比较：VAL > 100 -> OUT_GT
+  - id: MLC_ki
+    zh-CN: N6-Move
+  - id: MLC_4W9
+    zh-CN: 传送：42 -> DST
+  - id: MLC_4yP
+    zh-CN: N7-加法
+  - id: MLC_fp
+    zh-CN: 加法：V1 + V2 -> SUM

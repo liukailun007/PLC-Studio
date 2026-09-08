@@ -1,0 +1,45 @@
+﻿// ============================================================================
+//  FC_MathCompareDemo —— 偏差运算 / 比较 / 限幅 / 质量位示例（FC）
+//  ---------------------------------------------------------------------------
+//  功能：计算设定值与实际值的偏差及绝对偏差，按死区判断是否在公差内，
+//        输出限幅后的偏差值，并给出高于/低于设定值及偏差百分比，便于调节与显示。
+//  适用：S7-1200 / S7-1500（优化访问）。闭环调节前处理 / 偏差监视骨架。
+//  作者：TIA MCP 示例库     版本：0.2
+// ============================================================================
+FUNCTION "FC_MathCompareDemo" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.2
+   VAR_INPUT
+      Setpoint : Real;   // 设定值
+      Actual   : Real;   // 实际值
+      Deadband : Real;   // 死区（绝对偏差 <= 死区视为在公差内）
+      OutMin   : Real;   // 偏差输出下限
+      OutMax   : Real;   // 偏差输出上限
+   END_VAR
+
+   VAR_OUTPUT
+      ErrorValue   : Real;   // 偏差 = 设定值 - 实际值
+      AbsError     : Real;   // 绝对偏差
+      OutputValue  : Real;   // 限幅后的偏差值（可作为调节量）
+      InTolerance  : Bool;   // 在公差内（绝对偏差 <= 死区）
+      AboveSetpoint: Bool;   // 实际值高于设定值
+      DeviationPct : Real;   // 相对设定值的偏差百分比（设定值为 0 时记 0）
+   END_VAR
+
+BEGIN
+   // --- 偏差与绝对偏差 ----------------------------------------------------
+   ErrorValue := Setpoint - Actual;
+   AbsError   := ABS(ErrorValue);
+
+   // --- 限幅输出与公差判断 ------------------------------------------------
+   OutputValue := LIMIT(MN := OutMin, IN := ErrorValue, MX := OutMax);
+   InTolerance := AbsError <= Deadband;
+
+   // --- 方向与偏差百分比（供 HMI 显示） -----------------------------------
+   AboveSetpoint := Actual > Setpoint;
+   IF Setpoint <> 0.0 THEN
+      DeviationPct := AbsError / ABS(Setpoint) * 100.0;
+   ELSE
+      DeviationPct := 0.0;                       // 设定值为 0 时不计算百分比
+   END_IF;
+END_FUNCTION

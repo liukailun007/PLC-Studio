@@ -1,0 +1,85 @@
+﻿{
+    S7_BlockComment := "MLC_3pC";
+    S7_BlockNumber := "59989";
+    S7_BlockTitle := "MLC_jr";
+    S7_Optimized := "TRUE";
+    S7_PreferredLanguage := "LAD";
+    S7_Version := "0.1"
+}
+FUNCTION_BLOCK "MCPVerify_FB_LAD_v3"
+    VAR_INPUT
+        Trig : Bool;
+        PulseBit : Bool;
+        NegIn : Bool;
+        CmpA : Int;
+        CmpB : Int;
+    END_VAR
+    VAR_OUTPUT
+        OutTonQ : Bool;
+        OutPulse : Bool;
+        OutNot : Bool;
+        OutLt : Bool;
+    END_VAR
+    VAR
+        tonInst : TON_TIME;
+    END_VAR
+    VAR_TEMP
+        PulseWork : Bool;
+    END_VAR
+
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4zs";
+        S7_NetworkTitle := "MLC_463"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #Trig )
+            { S7_Templates := "time_type := Time" }
+            #tonInst.TON(
+                pt := T#500ms,
+                et =>  
+            )
+            Coil( #OutTonQ )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4iu";
+        S7_NetworkTitle := "MLC_3qd"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #PulseBit )
+            P_Trig( #PulseWork )
+            Coil( #OutPulse )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_4YN";
+        S7_NetworkTitle := "MLC_4Ze"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #NegIn )
+            Not()
+            Coil( #OutNot )
+        END_RUNG
+    END_NETWORK
+    {
+        S7_Language := "LAD";
+        S7_NetworkComment := "MLC_49z";
+        S7_NetworkTitle := "MLC_QS"
+    }
+    NETWORK
+        RUNG wire#powerrail
+            { S7_Templates := "SrcType := Int" }
+            LT_Contact(
+                in1 := #CmpA,
+                in2 := #CmpB
+            )
+            Coil( #OutLt )
+        END_RUNG
+    END_NETWORK
+END_FUNCTION_BLOCK

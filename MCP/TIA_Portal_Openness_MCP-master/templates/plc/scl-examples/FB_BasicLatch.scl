@@ -1,0 +1,50 @@
+﻿// ============================================================================
+//  FB_BasicLatch —— 启动/停止/故障/复位 保持（自锁）功能块
+//  ---------------------------------------------------------------------------
+//  功能：实现带故障闭锁的标准启停自锁逻辑。故障优先停机并闭锁，复位清除故障，
+//        停止与故障均使输出失活；仅在使能且无故障时输出激活。
+//  适用：S7-1200 / S7-1500（优化访问）。典型电机/泵启停控制骨架。
+//  作者：TIA MCP 示例库     版本：0.2
+// ============================================================================
+FUNCTION_BLOCK "FB_BasicLatch"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.2
+   VAR_INPUT
+      Enable     : Bool;   // 启动请求：为 TRUE 且无故障时使输出激活
+      Disable    : Bool;   // 停止请求：高电平使输出失活
+      FaultInput : Bool;   // 故障输入：为 TRUE 时闭锁故障并立即停机
+      Reset      : Bool;   // 复位：清除已闭锁的故障（高电平有效）
+   END_VAR
+
+   VAR_OUTPUT
+      Active  : Bool;   // 输出激活（运行中）
+      Fault   : Bool;   // 故障闭锁中
+      Healthy : Bool;   // 健康：无故障，可运行
+   END_VAR
+
+   VAR
+      ActiveLatch : Bool;   // 内部运行自锁位
+      FaultLatch  : Bool;   // 内部故障闭锁位
+   END_VAR
+
+BEGIN
+   // --- 故障闭锁与复位（故障优先） ----------------------------------------
+   IF FaultInput THEN
+      FaultLatch  := TRUE;     // 出现故障：闭锁故障
+      ActiveLatch := FALSE;    // 并立即停机
+   ELSIF Reset THEN
+      FaultLatch := FALSE;     // 复位：清除故障闭锁
+   END_IF;
+
+   // --- 启停自锁（停止/故障优先于启动） -----------------------------------
+   IF Disable OR FaultLatch THEN
+      ActiveLatch := FALSE;                    // 停止或故障：失活
+   ELSIF Enable AND NOT FaultLatch THEN
+      ActiveLatch := TRUE;                     // 启动且无故障：激活
+   END_IF;
+
+   // --- 输出映射 ----------------------------------------------------------
+   Active  := ActiveLatch;
+   Fault   := FaultLatch;
+   Healthy := NOT FaultLatch;                  // 无故障即为健康
+END_FUNCTION_BLOCK

@@ -1,0 +1,40 @@
+﻿FUNCTION "MCPVerify_FC_SCL_v3" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Seed : DInt;
+      Sel : Int;
+   END_VAR
+
+   VAR_OUTPUT 
+      OutVal : DInt;
+      BranchTag : Int;
+   END_VAR
+
+   VAR_TEMP 
+      acc : DInt;
+      i : Int;
+      tv : DInt;
+   END_VAR
+
+
+BEGIN
+	acc := Seed;
+	i := 0;
+	REPEAT
+	    acc := acc + i;
+	    i := i + 1;
+	UNTIL i > 3
+	END_REPEAT;
+	IF Sel = 0 THEN
+	    BranchTag := 0;
+	    tv := acc;
+	ELSIF Sel = 1 THEN
+	    BranchTag := 1;
+	    tv := acc * 2;
+	ELSE
+	    BranchTag := 2;
+	    tv := acc - 1;
+	END_IF;
+	OutVal := tv;
+END_FUNCTION

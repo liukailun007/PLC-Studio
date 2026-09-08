@@ -1,0 +1,28 @@
+FUNCTION "MCPVerify_FC_SCL_E2E" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      Enable : Bool;
+      Mode : Int;
+      InInt : Int;
+      InReal : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      OutBool : Bool;
+      OutInt : Int;
+      OutDInt : DInt;
+      OutReal : Real;
+      OutWord : Word;
+   END_VAR
+
+   VAR_TEMP 
+      i : Int;
+      acc : Int;
+   END_VAR
+
+
+BEGIN
+	// 与模板中 MCPVerify_FC_SCL_E2E.xml（FC903）接口一致；逻辑以导入的 Openness XML 为准。
+	// 本 .scl 仅作文档/外部源参考；优先使用 ImportBlock(XML) 导入块。
+END_FUNCTION

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "2026-05-12",
+  "name": "lad_call_recipes",
+  "description": "通用 LAD 调用网络配方。使用 BuildFlgNetCallXml 生成调用网络，复杂梯形图请使用 TIA 导出的已验证 XML。",
+  "recipes": [
+    {
+      "id": "fc_call_with_bool_and_real",
+      "tool": "BuildFlgNetCallXml",
+      "callJson": {
+        "callName": "FC_MathCompareDemo",
+        "parameters": [
+          { "name": "Setpoint", "section": "Input", "dataType": "Real", "symbol": "DB_HMI_Interface.Setpoint" },
+          { "name": "Actual", "section": "Input", "dataType": "Real", "symbol": "DB_HMI_Interface.Actual" },
+          { "name": "Deadband", "section": "Input", "dataType": "Real", "sourceKind": "constant", "value": "1.0" },
+          { "name": "OutputValue", "section": "Output", "dataType": "Real", "symbol": "DB_HMI_Interface.Output" }
+        ]
+      }
+    },
+    {
+      "id": "fb_call_with_instance_db",
+      "note": "FB 调用通常需要匹配的实例 DB。导入 FB 并编译后，在 TIA 中创建或由验证过的流程生成实例 DB。",
+      "tool": "BuildFlgNetCallXml",
+      "callJson": {
+        "callName": "FB_BasicLatch",
+        "parameters": [
+          { "name": "Enable", "section": "Input", "dataType": "Bool", "symbol": "DB_HMI_Interface.CmdEnable" },
+          { "name": "Disable", "section": "Input", "dataType": "Bool", "symbol": "DB_HMI_Interface.CmdDisable" },
+          { "name": "Reset", "section": "Input", "dataType": "Bool", "symbol": "DB_HMI_Interface.CmdReset" },
+          { "name": "Active", "section": "Output", "dataType": "Bool", "symbol": "DB_HMI_Interface.StatusActive" },
+          { "name": "Fault", "section": "Output", "dataType": "Bool", "symbol": "DB_HMI_Interface.StatusError" }
+        ]
+      }
+    }
+  ]
+}

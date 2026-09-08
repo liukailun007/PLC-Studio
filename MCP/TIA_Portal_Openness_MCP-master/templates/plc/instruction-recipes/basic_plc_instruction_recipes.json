@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "2026-05-12",
+  "name": "basic_plc_instruction_recipes",
+  "title": "PLC 基础语法与基础功能配方",
+  "scope": "通用 STEP 7 / SCL / MCP 生成模板；不包含现场项目或业务工艺逻辑。",
+  "rules": [
+    "只用于生成基础块、基础变量表、基础 DB 和基础 HMI 绑定对象。",
+    "不要把 recipe 名称、变量名或注释替换成现场项目专有资料后再放回交付包。",
+    "复杂 LAD/FBD 网络不要手写，使用 TIA 导出的已验证 XML 或 PlcBuildAndImport 生成。",
+    "任何写入先 dryRun，真实导入后编译。",
+    "neutralExample / callPattern / declarationPattern 里的 SCL 是【原生 SCL 文本】，用于写 scl-examples/*.scl 外部源或人工参考。绝不要把含运算符/函数/比较/CASE/FOR 的整行塞进 PlcBuildAndImport DSL 的 condition 或 source —— DSL 只接受单个变量名，否则编译报 Tag not defined。含表达式/CASE/FOR 的 FC/FB 一律走 ImportPlcExternalSource + GenerateBlocksFromExternalSource。"
+  ],
+  "recipes": [
+    {
+      "id": "bool_logic",
+      "title": "布尔逻辑",
+      "instructions": ["AND", "OR", "NOT", "XOR", "assignment"],
+      "useFor": ["条件组合", "状态占位", "输出条件"],
+      "neutralExample": {
+        "structuredText": [
+          "OutputA := InputA AND NOT InputB;",
+          "OutputB := InputA OR InputC;"
+        ]
+      }
+    },
+    {
+      "id": "if_case_branching",
+      "title": "IF / ELSIF / ELSE / CASE 分支",
+      "instructions": ["IF", "ELSIF", "ELSE", "END_IF", "CASE", "END_CASE"],
+      "useFor": ["模式选择", "状态码选择", "条件分派"],
+      "neutralExample": {
+        "structuredText": [
+          "IF ConditionA THEN",
+          "    State := 1;",
+          "ELSIF ConditionB THEN",
+          "    State := 2;",
+          "ELSE",
+          "    State := 0;",
+          "END_IF;",
+          "CASE State OF",
+          "    0: Result := 0;",
+          "    1: Result := ValueA;",
+          "    2: Result := ValueB;",
+          "END_CASE;"
+        ]
+      }
+    },
+    {
+      "id": "edge_detection",
+      "title": "沿触发",
+      "instructions": ["R_TRIG", "F_TRIG"],
+      "useFor": ["按钮脉冲", "事件触发", "一次性动作"],
+      "declarationPattern": [
+        "RiseEdge {InstructionName := 'R_TRIG'; LibVersion := '1.0'} : R_TRIG;",
+        "FallEdge {InstructionName := 'F_TRIG'; LibVersion := '1.0'} : F_TRIG;"
+      ],
+      "callPattern": [
+        "RiseEdge(CLK := InputSignal);",
+        "Pulse := RiseEdge.Q;"
+      ],
+      "notes": ["沿触发实例应放在 FB/DB 可保持的 VAR 区，而不是 TEMP 区。"]
+    },
+    {
+      "id": "timers",
+      "title": "定时器",
+      "instructions": ["TON", "TOF", "TP"],
+      "useFor": ["延时接通", "延时断开", "脉冲输出", "去抖"],
+      "declarationPattern": [
+        "OnDelay {InstructionName := 'TON'; LibVersion := '1.0'} : TON;",
+        "PulseTimer {InstructionName := 'TP'; LibVersion := '1.0'} : TP;"
+      ],
+      "callPattern": [
+        "OnDelay(IN := Enable, PT := T#2s);",
+        "Delayed := OnDelay.Q;",
+        "Elapsed := OnDelay.ET;"
+      ],
+      "notes": ["TIA 版本和 CPU 型号可能显示为 TON 或 TON_TIME，真实名称以导出/编译为准。"]
+    },
+    {
+      "id": "counters",
+      "title": "计数器",
+      "instructions": ["CTU", "CTD", "CTUD"],
+      "useFor": ["事件计数", "批次数", "简单累计"],
+      "declarationPattern": [
+        "CounterUp {InstructionName := 'CTU'; LibVersion := '1.0'} : CTU;"
+      ],
+      "callPattern": [
+        "CounterUp(CU := CountPulse, R := Reset, PV := 100);",
+        "CountValue := CounterUp.CV;",
+        "Reached := CounterUp.Q;"
+      ]
+    },
+    {
+      "id": "math_compare_limit",
+      "title": "算术、比较和限幅",
+      "instructions": ["+", "-", "*", "/", "ABS", "MIN", "MAX", "LIMIT", "=", "<>", ">", ">=", "<", "<="],
+      "useFor": ["基础计算", "范围判断", "输出保护"],
+      "neutralExample": {
+        "structuredText": [
+          "ErrorValue := Setpoint - ActualValue;",
+          "AbsError := ABS(ErrorValue);",
+          "LimitedOut := LIMIT(MN := MinValue, IN := RawValue, MX := MaxValue);",
+          "InRange := (ActualValue >= MinValue) AND (ActualValue <= MaxValue);"
+        ]
+      }
+    },
+    {
+      "id": "type_conversion",
+      "title": "类型转换",
+      "instructions": ["BOOL_TO_DINT", "INT_TO_REAL", "DINT_TO_REAL", "REAL_TO_DINT", "CONV"],
+      "useFor": ["工程量换算", "HMI 数值显示", "接口数据整理"],
+      "neutralExample": {
+        "structuredText": [
+          "RealValue := DINT_TO_REAL(DIntValue);",
+          "DIntValue := REAL_TO_DINT(RealValue);",
+          "FlagAsNumber := BOOL_TO_DINT(Flag);"
+        ]
+      }
+    },
+    {
+      "id": "array_loop",
+      "title": "数组和 FOR 循环",
+      "instructions": ["ARRAY", "FOR", "TO", "DO", "END_FOR"],
+      "useFor": ["重复通道处理", "批量清零", "批量状态扫描"],
+      "neutralExample": {
+        "structuredText": [
+          "FOR Index := 0 TO 15 DO",
+          "    Values[Index] := 0;",
+          "END_FOR;"
+        ]
+      },
+      "notes": ["数组上下界必须与 DB/UDT 声明一致，避免越界。"]
+    },
+    {
+      "id": "basic_latch",
+      "title": "基础置位/复位保持",
+      "instructions": ["IF", "assignment", "Bool latch"],
+      "useFor": ["通用状态保持", "通用命令保持"],
+      "externalSclTemplate": "templates/plc/scl-examples/FB_BasicLatch.scl"
+    },
+    {
+      "id": "basic_scaling",
+      "title": "基础线性缩放",
+      "instructions": ["REAL arithmetic", "LIMIT"],
+      "useFor": ["模拟量归一化", "HMI 显示值换算", "输出范围限制"],
+      "externalSclTemplate": "templates/plc/scl-examples/FC_BasicScaleLimit.scl"
+    }
+  ],
+  "mcpWorkflow": [
+    "Bootstrap",
+    "Connect",
+    "GetProjectTree",
+    "PlcBuildAndImport(dryRun=true)  // 仅 tagtable/udt/globaldb",
+    "PlcBuildAndImport(dryRun=false) // 仅 tagtable/udt/globaldb",
+    "ImportPlcExternalSource + GenerateBlocksFromExternalSource // 含表达式/CASE/FOR 的 FC/FB（scl-examples/*.scl）",
+    "CompileAndDiagnosePlc",
+    "SaveProject"
+  ]
+}

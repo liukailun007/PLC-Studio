@@ -1,0 +1,72 @@
+﻿{
+    S7_Optimized := "TRUE";
+    S7_PreferredLanguage := "LAD";
+    S7_Version := "0.1"
+}
+FUNCTION_BLOCK "MCPVerify_Mixed_LADSCL"
+    VAR_INPUT
+        Fwd : Bool;
+        Rev : Bool;
+        LimFwd : Bool;
+        LimRev : Bool;
+        Va : Int;
+        Vb : Int;
+        PulseIn : Bool;
+    END_VAR
+    VAR_OUTPUT
+        RunFwd : Bool;
+        RunRev : Bool;
+        TmrQ : Bool;
+        Sum : Int;
+        Pulse : Bool;
+    END_VAR
+    VAR
+        ton1 : TON_TIME;
+    END_VAR
+    VAR_TEMP
+        edgeMem : Bool;
+    END_VAR
+
+    // NET1 LAD — direction interlock (该 LAD: 互锁看能流直观)
+    { S7_Language := "LAD" }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #Fwd )
+            I_Contact( #RunRev )
+            I_Contact( #LimFwd )
+            Coil( #RunFwd )
+        END_RUNG
+        RUNG wire#powerrail
+            Contact( #Rev )
+            I_Contact( #RunFwd )
+            I_Contact( #LimRev )
+            Coil( #RunRev )
+        END_RUNG
+    END_NETWORK
+
+    // NET2 LAD — compare + on-delay timer (Va > Vb held 500ms -> TmrQ)
+    { S7_Language := "LAD" }
+    NETWORK
+        RUNG wire#powerrail
+            GT_Contact{ SrcType := Int }( in1 := #Va, in2 := #Vb )
+            #ton1.TON{ time_type := Time }( PT := T#500ms, ET => )
+            Coil( #TmrQ )
+        END_RUNG
+    END_NETWORK
+
+    // NET3 SCL — arithmetic (该 SCL: 算术更清楚)
+    { S7_Language := "SCL" }
+    NETWORK
+        #Sum := #Va + #Vb;
+    END_NETWORK
+
+    // NET4 LAD — rising edge
+    { S7_Language := "LAD" }
+    NETWORK
+        RUNG wire#powerrail
+            Contact( #PulseIn )
+            P_Trig( #edgeMem )
+            Coil( #Pulse )
+        END_RUNG
+    END_NETWORK
+END_FUNCTION_BLOCK

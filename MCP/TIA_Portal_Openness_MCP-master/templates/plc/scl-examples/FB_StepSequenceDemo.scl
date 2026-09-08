@@ -1,0 +1,67 @@
+﻿// ============================================================================
+//  FB_StepSequenceDemo —— 步序状态机示例功能块
+//  ---------------------------------------------------------------------------
+//  功能：用 CASE 实现 4 步顺序流程（空闲→步10→步20→步30→回空闲）。
+//        Next 上升沿推进步序，ConditionOk 作为进入/退出条件，并输出进度百分比。
+//  适用：S7-1200 / S7-1500（优化访问）。顺序控制 / 工艺步进骨架。
+//  作者：TIA MCP 示例库     版本：0.2
+// ============================================================================
+FUNCTION_BLOCK "FB_StepSequenceDemo"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.2
+   VAR_INPUT
+      Enable      : Bool;   // 使能：为 FALSE 时强制回到空闲步
+      Next        : Bool;   // 步进请求：上升沿推进到下一步
+      Reset       : Bool;   // 复位：高电平强制回到空闲步
+      ConditionOk : Bool;   // 步序条件：满足时才允许进入/保持流程
+   END_VAR
+
+   VAR_OUTPUT
+      StepNo   : Int;    // 当前步号（0=空闲, 10/20/30=各工作步）
+      Ready    : Bool;   // 就绪：处于空闲步，等待启动
+      Busy     : Bool;   // 运行中：处于中间工作步
+      Done     : Bool;   // 完成：到达最后一步
+      Progress : Real;   // 进度百分比 0/33/66/100，供 HMI 显示
+   END_VAR
+
+   VAR
+      State    : Int;   // 状态机当前状态
+      LastNext : Bool;  // 上一周期 Next 状态，用于上升沿检测
+   END_VAR
+
+BEGIN
+   // --- 状态机主体 --------------------------------------------------------
+   IF Reset OR NOT Enable THEN
+      State := 0;                                  // 复位或未使能：回空闲步
+   ELSE
+      CASE State OF
+         0:                                        // 空闲：条件满足则启动
+            IF ConditionOk THEN State := 10; END_IF;
+         10:                                       // 步10：Next 上升沿进入步20
+            IF Next AND NOT LastNext THEN State := 20; END_IF;
+         20:                                       // 步20：Next 上升沿进入步30
+            IF Next AND NOT LastNext THEN State := 30; END_IF;
+         30:                                       // 步30（完成）：条件消失则回空闲
+            IF NOT ConditionOk THEN State := 0; END_IF;
+      ELSE
+         State := 0;                               // 非法状态保护：回空闲
+      END_CASE;
+   END_IF;
+   LastNext := Next;                               // 记录 Next，供下次沿检测
+
+   // --- 状态输出映射 ------------------------------------------------------
+   StepNo := State;
+   Ready  := (State = 0);
+   Busy   := (State > 0) AND (State < 30);
+   Done   := (State = 30);
+
+   // --- 进度百分比（供 HMI 显示） -----------------------------------------
+   CASE State OF
+      0:   Progress := 0.0;
+      10:  Progress := 33.0;
+      20:  Progress := 66.0;
+      30:  Progress := 100.0;
+   ELSE
+      Progress := 0.0;
+   END_CASE;
+END_FUNCTION_BLOCK

@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 396"
+     width="100%" style="max-width:980px;height:auto;" role="img"
+     aria-label="TIA Portal MCP architecture">
+  <defs>
+    <style><![CDATA[
+      .title { font: 700 21px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#FFFFFF; }
+      .sub   { font: 13px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#3F4A5C; }
+      .h2    { font: 700 14px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#1F2937; }
+      .body  { font: 11px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#3F4A5C; }
+      .chip  { font: 700 12px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#1F2937; }
+      .lbl   { font: 11px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#6B7686; }
+      .foot  { font: italic 11px 'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif; fill:#6B7686; }
+    ]]></style>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.10"/>
+    </filter>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#5B6776"/>
+    </marker>
+  </defs>
+
+  <!-- title -->
+  <rect x="10" y="12" width="960" height="46" rx="8" fill="#0F2E5C"/>
+  <text x="490" y="35" class="title" text-anchor="middle" dominant-baseline="middle">
+    TIA Portal MCP &#8212; architecture
+  </text>
+  <text x="490" y="80" class="sub" text-anchor="middle">
+    Drive Siemens TIA Portal V20 / V21 from any MCP client &#8212; one server, two version-matched builds.
+  </text>
+
+  <!-- pipeline arrows (behind cards' gaps) -->
+  <line x1="238" y1="175" x2="259" y2="175" stroke="#5B6776" stroke-width="2.2" marker-end="url(#ar)"/>
+  <line x1="479" y1="175" x2="500" y2="175" stroke="#5B6776" stroke-width="2.2" marker-end="url(#ar)"/>
+  <line x1="720" y1="175" x2="741" y2="175" stroke="#5B6776" stroke-width="2.2" marker-end="url(#ar)"/>
+
+  <!-- card 1: MCP client -->
+  <g transform="translate(20,100)">
+    <rect width="217" height="150" rx="10" fill="#FFFFFF" stroke="#CBD3DE" stroke-width="1.2" filter="url(#sh)"/>
+    <rect width="217" height="6" rx="3" fill="#0E8F8A"/>
+    <text x="108.5" y="34" class="h2" text-anchor="middle">MCP Client</text>
+    <text x="108.5" y="66" class="body" text-anchor="middle">
+      <tspan x="108.5" dy="0">Cursor &#183; VS Code</tspan>
+      <tspan x="108.5" dy="1.7em">Claude Desktop</tspan>
+      <tspan x="108.5" dy="1.7em">or any HTTP client</tspan>
+    </text>
+  </g>
+
+  <!-- card 2: server -->
+  <g transform="translate(261,100)">
+    <rect width="217" height="150" rx="10" fill="#FFFFFF" stroke="#CBD3DE" stroke-width="1.2" filter="url(#sh)"/>
+    <rect width="217" height="6" rx="3" fill="#1F4E89"/>
+    <text x="108.5" y="34" class="h2" text-anchor="middle">TiaMcpServer.exe</text>
+    <text x="108.5" y="66" class="body" text-anchor="middle">
+      <tspan x="108.5" dy="0">V21 &#8594; bin/Release</tspan>
+      <tspan x="108.5" dy="1.7em">V20 &#8594; bin-v20/Release</tspan>
+      <tspan x="108.5" dy="1.7em">L0 / L1 / L2 tools</tspan>
+    </text>
+  </g>
+
+  <!-- card 3: openness -->
+  <g transform="translate(502,100)">
+    <rect width="217" height="150" rx="10" fill="#FFFFFF" stroke="#CBD3DE" stroke-width="1.2" filter="url(#sh)"/>
+    <rect width="217" height="6" rx="3" fill="#8E44AD"/>
+    <text x="108.5" y="34" class="h2" text-anchor="middle">Siemens Openness</text>
+    <text x="108.5" y="66" class="body" text-anchor="middle">
+      <tspan x="108.5" dy="0">V21 split DLLs</tspan>
+      <tspan x="108.5" dy="1.7em">V20 monolithic DLL</tspan>
+      <tspan x="108.5" dy="1.7em">version-safe import</tspan>
+    </text>
+  </g>
+
+  <!-- card 4: TIA Portal -->
+  <g transform="translate(743,100)">
+    <rect width="217" height="150" rx="10" fill="#FFFFFF" stroke="#CBD3DE" stroke-width="1.2" filter="url(#sh)"/>
+    <rect width="217" height="6" rx="3" fill="#E07A22"/>
+    <text x="108.5" y="34" class="h2" text-anchor="middle">TIA Portal V20/V21</text>
+    <text x="108.5" y="66" class="body" text-anchor="middle">
+      <tspan x="108.5" dy="0">live project</tspan>
+      <tspan x="108.5" dy="1.7em">PLC &#183; WinCC HMI</tspan>
+      <tspan x="108.5" dy="1.7em">compile &#183; download</tspan>
+    </text>
+  </g>
+
+  <!-- flow caption -->
+  <text x="490" y="272" class="lbl" text-anchor="middle">
+    JSON-RPC over stdio / HTTP  &#8594;  Openness reflection  &#8594;  attached TIA project
+  </text>
+
+  <!-- outputs -->
+  <text x="20" y="298" class="lbl">What it generates</text>
+  <g class="chip">
+    <rect x="20"  y="306" width="220" height="42" rx="8" fill="#E8F5EE" stroke="#2E8B57" stroke-width="1.1"/>
+    <text x="130" y="331" text-anchor="middle">Project &amp; Hardware</text>
+    <rect x="260" y="306" width="220" height="42" rx="8" fill="#E8F5EE" stroke="#2E8B57" stroke-width="1.1"/>
+    <text x="370" y="331" text-anchor="middle">PLC: Tag/UDT/DB/SCL/LAD</text>
+    <rect x="500" y="306" width="220" height="42" rx="8" fill="#E8F5EE" stroke="#2E8B57" stroke-width="1.1"/>
+    <text x="610" y="331" text-anchor="middle">WinCC Unified HMI</text>
+    <rect x="740" y="306" width="220" height="42" rx="8" fill="#E8F5EE" stroke="#2E8B57" stroke-width="1.1"/>
+    <text x="850" y="331" text-anchor="middle">Compile &amp; Download</text>
+  </g>
+
+  <!-- footnote -->
+  <text x="490" y="376" class="foot" text-anchor="middle">
+    Free &amp; open (MIT) &#183; prebuilt runtime, no license key required
+  </text>
+</svg>

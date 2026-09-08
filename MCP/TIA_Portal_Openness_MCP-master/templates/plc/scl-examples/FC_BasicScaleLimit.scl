@@ -1,0 +1,43 @@
+﻿// ============================================================================
+//  FC_BasicScaleLimit —— 线性缩放与限幅功能（FC）
+//  ---------------------------------------------------------------------------
+//  功能：把原始量程 [RawMin, RawMax] 的输入线性映射到工程量程 [EngMin, EngMax]，
+//        并限幅在工程上下限内；量程非法（RawMax = RawMin）时输出下限并报无效。
+//        额外输出 Clamped 指示结果是否被限幅，便于诊断超量程。
+//  适用：S7-1200 / S7-1500（优化访问）。模拟量工程值换算的标准骨架。
+//  作者：TIA MCP 示例库     版本：0.2
+// ============================================================================
+FUNCTION "FC_BasicScaleLimit" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.2
+   VAR_INPUT
+      RawValue : Real;   // 原始输入值（如 AI 通道标定后的电流/电压值）
+      RawMin   : Real;   // 原始量程下限
+      RawMax   : Real;   // 原始量程上限
+      EngMin   : Real;   // 工程量程下限
+      EngMax   : Real;   // 工程量程上限
+   END_VAR
+
+   VAR_OUTPUT
+      EngValue : Real;   // 换算并限幅后的工程值
+      Valid    : Bool;   // 换算有效（量程合法）
+      Clamped  : Bool;   // 结果被上/下限限幅（输入超量程）
+   END_VAR
+
+   VAR_TEMP
+      Scaled : Real;     // 限幅前的线性换算中间值
+   END_VAR
+
+BEGIN
+   IF RawMax <> RawMin THEN
+      // 线性插值：EngMin + (输入占原始量程比例) * 工程量程跨度
+      Scaled   := EngMin + ((RawValue - RawMin) * (EngMax - EngMin) / (RawMax - RawMin));
+      EngValue := LIMIT(MN := EngMin, IN := Scaled, MX := EngMax);   // 限幅在工程上下限
+      Valid    := TRUE;
+      Clamped  := (Scaled <> EngValue);          // 限幅前后不一致说明发生了限幅
+   ELSE
+      EngValue := EngMin;                         // 量程非法：输出下限并报无效
+      Valid    := FALSE;
+      Clamped  := FALSE;
+   END_IF;
+END_FUNCTION

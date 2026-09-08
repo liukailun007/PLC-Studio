@@ -1,0 +1,18 @@
+{
+  "kind": "tagtable",
+  "tool": "PlcBuildAndImport",
+  "description": "通用基础信号变量表骨架，地址仅为示例，真实项目应按硬件重新分配。",
+  "json": {
+    "tableName": "Basic_Signals",
+    "tags": [
+      { "name": "Cmd_Enable", "dataTypeName": "Bool", "logicalAddress": "%M0.0" },
+      { "name": "Cmd_Disable", "dataTypeName": "Bool", "logicalAddress": "%M0.1" },
+      { "name": "Cmd_Reset", "dataTypeName": "Bool", "logicalAddress": "%M0.2" },
+      { "name": "Status_Active", "dataTypeName": "Bool", "logicalAddress": "%M0.3" },
+      { "name": "Status_Error", "dataTypeName": "Bool", "logicalAddress": "%M0.4" },
+      { "name": "Value_Setpoint", "dataTypeName": "Real", "logicalAddress": "%MD10" },
+      { "name": "Value_Actual", "dataTypeName": "Real", "logicalAddress": "%MD14" },
+      { "name": "Value_Output", "dataTypeName": "Real", "logicalAddress": "%MD18" }
+    ]
+  }
+}

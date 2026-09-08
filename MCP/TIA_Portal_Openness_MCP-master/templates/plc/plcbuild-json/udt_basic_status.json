@@ -1,0 +1,60 @@
+{
+  "kind": "udt",
+  "tool": "PlcBuildAndImport",
+  "description": "通用状态 UDT，不绑定任何业务对象。每个成员带中文注释。",
+  "json": {
+    "name": "UDT_BasicStatus",
+    "members": [
+      {
+        "name": "Active",
+        "datatype": "Bool",
+        "commentZhCn": "运行/激活标志"
+      },
+      {
+        "name": "Ready",
+        "datatype": "Bool",
+        "commentZhCn": "就绪标志（可启动）"
+      },
+      {
+        "name": "Error",
+        "datatype": "Bool",
+        "commentZhCn": "故障标志"
+      },
+      {
+        "name": "Warning",
+        "datatype": "Bool",
+        "commentZhCn": "警告标志"
+      },
+      {
+        "name": "State",
+        "datatype": "Int",
+        "startValue": "0",
+        "commentZhCn": "状态码（0=空闲，>0=各工作状态）"
+      },
+      {
+        "name": "ErrorCode",
+        "datatype": "Int",
+        "startValue": "0",
+        "commentZhCn": "故障代码（0=无故障）"
+      },
+      {
+        "name": "Setpoint",
+        "datatype": "Real",
+        "startValue": "0.0",
+        "commentZhCn": "设定值"
+      },
+      {
+        "name": "Actual",
+        "datatype": "Real",
+        "startValue": "0.0",
+        "commentZhCn": "实际值"
+      },
+      {
+        "name": "Output",
+        "datatype": "Real",
+        "startValue": "0.0",
+        "commentZhCn": "输出值"
+      }
+    ]
+  }
+}
