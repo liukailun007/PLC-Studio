@@ -113,3 +113,21 @@ ProjectContext
 - ✅ “某 FB 用了哪些信号/对应哪些操作对象”：有（blockUses）。
 - ↕ “被谁调用”（影响面 call-graph）：样例工程 OB1 不调用 FB，故暂无该边；真实带调用工程将能补上。
 
+### 2026-09-08 更新：把 FB 接进 OB1 之后重新扫描，地图跟上了 + 依赖关系出现
+
+用户把 FB_MotorControl/FB_AI_Convert 调进 OB1 后，重扫结果：
+- 块从 4 → 6：自动生成了实例 DB `FB_AI_Convert_DB`(DB2)、`FB_MotorControl_DB`(DB3)。
+- blockUses 出现依赖关系：`Main Uses` FB_AI_Convert/FB_MotorControl/两个_DB；且 FB_MotorControl 有 `UsedBy=Main` + `TypeInstance`（FB_AI_Convert 同理）。
+- 结论：地图能反映工程变化，方式是重跑 scan.mjs（当前手动，非自动）。
+
+自答用户三问（2026-09-08）：
+1. 地图实时更新？→ 不自动，需重扫；自动化要“助手改完块→自动重建地图”（V0.2）。
+2. 有变量表/能精到每个变量地址与含义？→ 样例的独立 PLC 变量表为空（信号在 FB/DB 接口内）；现能拿到块结构属性与跨引用 operand，但**拿不到每条 FB/DB 成员的绝对地址(%DBx.DBXy.z)与中文注释**——需导出块 SimaticML/.s7dcl 再解析 interface（属 V0.2 解析器，非免费）。
+3. 接法 B(产品化)更顺？→ 更顺但工作量大（扫描需可一键触发+自动按需重建+存查）。
+
+## 8. V0.2 候选（待确认范围）
+A) 让地图在“工程改动后自动重建”（封装成 helper/命令，助手可调用）
+B) 变量精读：导出块→解析接口→把每个成员 名/类型/偏移/初值/注释 收进地图
+C) 接法 B 产品化：把“扫描/重建地图”做成助手可一键触发的工具 + 可查询
+三块工作量递增。建议先从 A(自动重建)拿价值，B/C 按需再议。
+
