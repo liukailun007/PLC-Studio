@@ -53,7 +53,7 @@ describe('DefaultAssistantSeeder', () => {
 
     expect(assistant?.id).toMatch(UUID_V4_PATTERN)
     expect(assistant).toMatchObject({
-      name: 'Cherry Assistant',
+      name: 'PLC Assistant',
       emoji: DEFAULT_ASSISTANT_EMOJI,
       prompt: DEFAULT_ASSISTANT_PROMPT,
       modelId: CHERRYAI_DEFAULT_UNIQUE_MODEL_ID,
@@ -90,7 +90,7 @@ describe('DefaultAssistantSeeder', () => {
     new DefaultAssistantSeeder().run(dbh.db)
 
     const [assistant] = await dbh.db.select().from(assistantTable).limit(1)
-    expect(assistant?.name).toBe('Cherry 助手')
+    expect(assistant?.name).toBe('PLC 助手')
   })
 
   it('uses preferred system languages without calling app.getLocale before Electron is ready', async () => {
@@ -103,7 +103,7 @@ describe('DefaultAssistantSeeder', () => {
     expect(() => new DefaultAssistantSeeder().run(dbh.db)).not.toThrow()
 
     const [assistant] = await dbh.db.select().from(assistantTable).limit(1)
-    expect(assistant?.name).toBe('Cherry 助手')
+    expect(assistant?.name).toBe('PLC 助手')
   })
 
   it('falls back to the English default assistant name when preferred system languages are unavailable', async () => {
@@ -116,7 +116,7 @@ describe('DefaultAssistantSeeder', () => {
     expect(() => new DefaultAssistantSeeder().run(dbh.db)).not.toThrow()
 
     const [assistant] = await dbh.db.select().from(assistantTable).limit(1)
-    expect(assistant?.name).toBe('Cherry Assistant')
+    expect(assistant?.name).toBe('PLC Assistant')
   })
 
   it('falls back to the English default assistant name when preferred system languages are empty', async () => {
@@ -127,7 +127,7 @@ describe('DefaultAssistantSeeder', () => {
     new DefaultAssistantSeeder().run(dbh.db)
 
     const [assistant] = await dbh.db.select().from(assistantTable).limit(1)
-    expect(assistant?.name).toBe('Cherry Assistant')
+    expect(assistant?.name).toBe('PLC Assistant')
   })
 
   it('does not seed the default assistant when an active assistant already exists', async () => {
