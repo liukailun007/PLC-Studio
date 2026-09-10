@@ -1,3 +1,6 @@
+# Local TIA assistant backup (contains personal agent config; keep on disk only)
+.tia-agent-backup/
+
 # Logs
 logs
 *.log
